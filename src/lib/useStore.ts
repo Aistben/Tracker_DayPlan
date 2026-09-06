@@ -38,31 +38,66 @@ export function useStore() {
     []
   );
 
+  // Отметка "выполнено" вручную, без таймера, должна давать время:
+  // иначе задача зелёная, но в статистике её нет. Дописываем недостающее
+  // до планового значения одной сессией.
+  const settleTime = (d: AppData, taskId: string): Session[] => {
+    const task = d.tasks.find((t) => t.id === taskId);
+    if (!task) return d.sessions;
+    const spent = d.sessions
+      .filter((x) => x.taskId === taskId && x.type === "focus")
+      .reduce((sum, x) => sum + x.durationMinutes, 0);
+    const missing = task.plannedMinutes - spent;
+    if (missing <= 0) return d.sessions;
+    const base = new Date(task.date + "T12:00:00").getTime();
+    return [
+      ...d.sessions,
+      {
+        id: uid(),
+        taskId,
+        startedAt: base,
+        endedAt: base + missing * 60000,
+        durationMinutes: missing,
+        type: "focus" as const,
+        completed: true,
+      },
+    ];
+  };
+
   const setStatus = useCallback((id: string, status: Status) => {
-    setData((d) => ({
-      ...d,
-      tasks: d.tasks.map((t) =>
+    setData((d) => {
+      const tasks = d.tasks.map((t) =>
         t.id === id
           ? { ...t, status, doneAt: status === "done" ? Date.now() : t.doneAt }
           : t
-      ),
-    }));
+      );
+      return {
+        ...d,
+        tasks,
+        sessions: status === "done" ? settleTime({ ...d, tasks }, id) : d.sessions,
+      };
+    });
   }, []);
 
   const cycleStatus = useCallback((id: string) => {
-    setData((d) => ({
-      ...d,
-      tasks: d.tasks.map((t) => {
+    setData((d) => {
+      let next = "planned" as Status;
+      const tasks = d.tasks.map((t) => {
         if (t.id !== id) return t;
         const i = STATUS_CYCLE.indexOf(t.status);
-        const next = STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
+        next = STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
         return {
           ...t,
           status: next,
           doneAt: next === "done" ? Date.now() : null,
         };
-      }),
-    }));
+      });
+      return {
+        ...d,
+        tasks,
+        sessions: next === "done" ? settleTime({ ...d, tasks }, id) : d.sessions,
+      };
+    });
   }, []);
 
   // Правка названия и планового времени.
