@@ -3,56 +3,88 @@ import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { shiftISO, todayISO } from "../lib/storage";
+import { taskColor } from "../lib/types";
 import type { useStore } from "../lib/useStore";
 
 type Period = 7 | 30;
 
-export default function Stats({ store }: { store: ReturnType<typeof useStore> }) {
+function fmtH(min: number) {
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return h ? `${h}ч ${m}м` : `${m}м`;
+}
+
+export default function Stats({
+  store,
+  compact = false,
+}: {
+  store: ReturnType<typeof useStore>;
+  compact?: boolean;
+}) {
   const { data } = store;
   const [days, setDays] = useState<Period>(7);
 
-  // Единственный график: сколько часов ушло по дням.
-  const chart = useMemo(() => {
+  // Столбик на день, внутри — сегмент на каждую задачу.
+  const { chart, taskKeys, totalMin, activeDays } = useMemo(() => {
     const today = todayISO();
-    // Минуты фокус-сессий, разложенные по датам.
-    const byDate = new Map<string, number>();
+    const dates = Array.from({ length: days }, (_, i) =>
+      shiftISO(today, i - (days - 1))
+    );
+
+    // date -> taskId -> минуты
+    const grid = new Map<string, Map<string, number>>();
+    dates.forEach((d) => grid.set(d, new Map()));
+
     data.sessions
-      .filter((s) => s.type === "focus")
+      .filter((s) => s.type === "focus" && s.taskId)
       .forEach((s) => {
         const d = new Date(s.startedAt);
         const off = d.getTimezoneOffset();
         const iso = new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
-        byDate.set(iso, (byDate.get(iso) ?? 0) + s.durationMinutes);
+        const day = grid.get(iso);
+        if (!day) return;
+        day.set(s.taskId!, (day.get(s.taskId!) ?? 0) + s.durationMinutes);
       });
 
-    return Array.from({ length: days }, (_, i) => {
-      const date = shiftISO(today, i - (days - 1));
-      const min = byDate.get(date) ?? 0;
-      const dow = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][
-        (new Date(date + "T00:00:00").getDay() + 6) % 7
-      ];
-      return {
-        // за неделю — дни недели, за месяц — числа
-        label: days === 7 ? dow : date.slice(8),
-        часы: +(min / 60).toFixed(1),
+    // Уникальные задачи периода, по убыванию суммарного времени.
+    const totals = new Map<string, number>();
+    grid.forEach((day) =>
+      day.forEach((min, id) => totals.set(id, (totals.get(id) ?? 0) + min))
+    );
+    const keys = [...totals.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id);
+
+    const rows = dates.map((date) => {
+      const day = grid.get(date)!;
+      const row: Record<string, string | number> = {
+        label:
+          days === 7
+            ? ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][
+                (new Date(date + "T00:00:00").getDay() + 6) % 7
+              ]
+            : date.slice(8),
         date,
       };
+      keys.forEach((id) => {
+        row[id] = +((day.get(id) ?? 0) / 60).toFixed(2);
+      });
+      return row;
     });
+
+    const total = [...totals.values()].reduce((a, b) => a + b, 0);
+    const active = dates.filter((d) => (grid.get(d)?.size ?? 0) > 0).length;
+    return { chart: rows, taskKeys: keys, totalMin: total, activeDays: active };
   }, [data.sessions, days]);
 
-  const totalMin = chart.reduce((s, d) => s + d.часы * 60, 0);
-  const activeDays = chart.filter((d) => d.часы > 0).length;
-  const avg = activeDays ? totalMin / activeDays : 0;
+  const titleOf = (id: string) =>
+    data.tasks.find((t) => t.id === id)?.title ?? "Удалённая задача";
 
-  const fmtH = (min: number) => {
-    const h = Math.floor(min / 60);
-    const m = Math.round(min % 60);
-    return h ? `${h}ч ${m}м` : `${m}м`;
-  };
+  const avg = activeDays ? totalMin / activeDays : 0;
 
   return (
     <div>
-      <h2>Статистика</h2>
+      {!compact && <h2>📊 Статистика</h2>}
 
       <p>
         <button onClick={() => setDays(7)} disabled={days === 7}>
@@ -69,31 +101,53 @@ export default function Stats({ store }: { store: ReturnType<typeof useStore> })
         <strong>{activeDays}</strong> из {days}
       </p>
 
-      <div style={{ width: "100%", height: 280 }}>
+      <div style={{ width: "100%", height: compact ? 240 : 300 }}>
         <ResponsiveContainer>
           <BarChart data={chart}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="label" interval={days === 7 ? 0 : 2} />
             <YAxis unit="ч" />
             <Tooltip
-              formatter={(v: number) => [`${v} ч`, "Потрачено"]}
+              formatter={(v: number, name: string) => [`${v} ч`, titleOf(name)]}
               labelFormatter={(_, p) => p?.[0]?.payload?.date ?? ""}
             />
-            <Bar dataKey="часы" fill="#4a7" />
+            {taskKeys.map((id) => (
+              <Bar key={id} dataKey={id} stackId="day" fill={taskColor(id)} />
+            ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
 
+      {/* Легенда: своя, чтобы показывать названия задач, а не id. */}
+      {taskKeys.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+          {taskKeys.map((id) => (
+            <span key={id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <span
+                style={{
+                  width: 12,
+                  height: 12,
+                  background: taskColor(id),
+                  display: "inline-block",
+                  borderRadius: 2,
+                }}
+              />
+              <small>{titleOf(id)}</small>
+            </span>
+          ))}
+        </div>
+      )}
+
       {!totalMin && (
         <p>
           <em>
-            Пока пусто. Запусти таймер на задаче во вкладке «Сегодня» — часы
-            появятся здесь.
+            Пока пусто. Запусти таймер на задаче — часы появятся здесь, каждая
+            задача своим цветом.
           </em>
         </p>
       )}
 
-      <p style={{ marginTop: 24 }}>
+      <p style={{ marginTop: 20 }}>
         <button
           onClick={() =>
             confirm("Удалить все задачи и сессии? Действие необратимо.") &&

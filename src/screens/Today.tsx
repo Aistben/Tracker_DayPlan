@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { STATUS_EMOJI, STATUS_LABEL, Status } from "../lib/types";
+import { STATUS_EMOJI, STATUS_LABEL, Status, taskColor } from "../lib/types";
 import { spentMinutes, tasksForDate, shiftISO } from "../lib/storage";
+import Stats from "./Stats";
 import type { useStore, useTimer } from "../lib/useStore";
 
 type Props = {
@@ -44,6 +45,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
   }, [tasks, data.sessions]);
 
   const pct = totals.plan ? Math.round((totals.spent / totals.plan) * 100) : 0;
+  const activeTask = data.tasks.find((t) => t.id === timer.taskId) ?? null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,10 +56,89 @@ export default function Today({ store, timer, date, setDate }: Props) {
 
   return (
     <div>
-      <h2>
-        <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">⬅️</button> {date}{" "}
-        <button onClick={() => setDate(shiftISO(date, 1))} title="Следующий день">➡️</button>
-      </h2>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <h2 style={{ margin: 0 }}>
+          <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">
+            ⬅️
+          </button>{" "}
+          {date}{" "}
+          <button onClick={() => setDate(shiftISO(date, 1))} title="Следующий день">
+            ➡️
+          </button>
+        </h2>
+
+        {/* Таймер активной задачи — всегда на виду */}
+        <div
+          style={{
+            border: "1px solid #ccc",
+            borderRadius: 6,
+            padding: "6px 12px",
+            minWidth: 300,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          {activeTask ? (
+            <>
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  fontSize: 26,
+                  width: 78,
+                  opacity: timer.running ? 1 : 0.45,
+                }}
+              >
+                {mmss(
+                  timer.mode === "pomodoro"
+                    ? Math.max(0, timer.targetSec - timer.elapsed)
+                    : timer.elapsed
+                )}
+              </span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <small
+                  style={{
+                    display: "block",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={activeTask.title}
+                >
+                  {activeTask.title}
+                </small>
+                <small style={{ opacity: 0.6 }}>
+                  {timer.running ? "идёт" : "на паузе"}
+                </small>
+              </span>
+              <button
+                onClick={() => timer.setRunning(!timer.running)}
+                title={timer.running ? "Пауза" : "Возобновить"}
+              >
+                {timer.running ? "⏸️" : "▶️"}
+              </button>
+              <button onClick={timer.stop} title="Стоп — записать как прерванную">
+                ⏹️
+              </button>
+              <button onClick={timer.complete} title="Готово — засчитать сессию">
+                ✔️
+              </button>
+            </>
+          ) : (
+            <small style={{ opacity: 0.6 }}>
+              ⏱️ Таймер не запущен — нажми ▶️ у задачи
+            </small>
+          )}
+        </div>
+      </div>
 
       <p>
         План {fmt(totals.plan)} · Факт {fmt(totals.spent)} · {pct}%
@@ -112,6 +193,16 @@ export default function Today({ store, timer, date, setDate }: Props) {
                         : "none",
                   }}
                 >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: 10,
+                      height: 10,
+                      borderRadius: 2,
+                      background: taskColor(t.id),
+                      marginRight: 8,
+                    }}
+                  />
                   {t.title}
                 </td>
                 <td>
@@ -119,35 +210,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   {isActive ? (
-                    <>
-                      <strong
-                        style={{
-                          fontFamily: "monospace",
-                          fontSize: 16,
-                          opacity: timer.running ? 1 : 0.5,
-                          display: "inline-block",
-                          width: 52,
-                        }}
-                      >
-                        {mmss(
-                          timer.mode === "pomodoro"
-                            ? Math.max(0, timer.targetSec - timer.elapsed)
-                            : timer.elapsed
-                        )}
-                      </strong>{" "}
-                      <button
-                        onClick={() => timer.setRunning(!timer.running)}
-                        title={timer.running ? "Пауза" : "Возобновить"}
-                      >
-                        {timer.running ? "⏸️" : "▶️"}
-                      </button>{" "}
-                      <button onClick={timer.stop} title="Стоп — записать как прерванную">
-                        ⏹️
-                      </button>{" "}
-                      <button onClick={timer.complete} title="Готово — засчитать сессию">
-                        ✔️
-                      </button>
-                    </>
+                    <em style={{ opacity: 0.7 }}>▶️ идёт — управление вверху</em>
                   ) : (
                     <button
                       onClick={() => timer.start(t.id, data.settings.focusMinutes)}
@@ -198,6 +261,60 @@ export default function Today({ store, timer, date, setDate }: Props) {
           🌙 Закрыть день — перенести незакрытое на завтра
         </button>
       </p>
+
+      <hr style={{ margin: "24px 0" }} />
+      <h3 style={{ marginTop: 0 }}>📊 Часы по дням</h3>
+      <Stats store={store} compact />
+
+      <hr style={{ margin: "24px 0" }} />
+      <details>
+        <summary>⚙️ Настройки таймера</summary>
+        <p>
+          Режим:{" "}
+          <label>
+            <input
+              type="radio"
+              checked={timer.mode === "pomodoro"}
+              onChange={() => timer.setMode("pomodoro")}
+            />{" "}
+            🍅 Помидоро
+          </label>{" "}
+          <label>
+            <input
+              type="radio"
+              checked={timer.mode === "stopwatch"}
+              onChange={() => timer.setMode("stopwatch")}
+            />{" "}
+            ⏱️ Секундомер
+          </label>
+        </p>
+        <p>
+          Фокус{" "}
+          <input
+            type="number"
+            min={1}
+            value={data.settings.focusMinutes}
+            onChange={(e) => store.updateSettings({ focusMinutes: +e.target.value })}
+            style={{ width: 60 }}
+          />{" "}
+          мин · Перерыв{" "}
+          <input
+            type="number"
+            min={1}
+            value={data.settings.shortBreakMinutes}
+            onChange={(e) =>
+              store.updateSettings({ shortBreakMinutes: +e.target.value })
+            }
+            style={{ width: 60 }}
+          />{" "}
+          мин{" "}
+          <button
+            onClick={() => "Notification" in window && Notification.requestPermission()}
+          >
+            🔔 Разрешить уведомления
+          </button>
+        </p>
+      </details>
     </div>
   );
 }

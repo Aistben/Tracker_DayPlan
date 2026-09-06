@@ -100,3 +100,16 @@ export type AppData = {
   categories: Category[];
   settings: Settings;
 };
+
+// Палитра для сегментов графика. Цвет закрепляется за задачей по её id,
+// поэтому одна и та же задача всегда одного цвета.
+export const TASK_COLORS = [
+  "#4a90d9", "#4aa777", "#d98c4a", "#9b6bd6",
+  "#d94a6b", "#43b0a3", "#c9a227", "#6b7fd6",
+];
+
+export function taskColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return TASK_COLORS[h % TASK_COLORS.length];
+}
