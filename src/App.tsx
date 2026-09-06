@@ -152,7 +152,16 @@ export default function App() {
         </button>
       </div>
 
-      <Today store={store} timer={timer} date={date} setDate={setDate} />
+      <Today
+        store={store}
+        timer={timer}
+        date={date}
+        setDate={setDate}
+        onTestNotify={() => {
+          setDone({ title: "Проверка уведомления", minutes: 25 });
+          chime();
+        }}
+      />
 
       {toast && (
         <div className="toast" role="status">

@@ -15,6 +15,7 @@ type Props = {
   timer: ReturnType<typeof useTimer>;
   date: string;
   setDate: (d: string) => void;
+  onTestNotify?: () => void;
 };
 
 // Категория скрыта в UI прототипа, но остаётся в модели ради статистики.
@@ -51,7 +52,7 @@ function relativeDay(iso: string) {
   return null;
 }
 
-export default function Today({ store, timer, date, setDate }: Props) {
+export default function Today({ store, timer, date, setDate, onTestNotify }: Props) {
   const { data, colorIndex } = store;
   const [title, setTitle] = useState("");
   const [planned, setPlanned] = useState(30);
@@ -343,12 +344,23 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 <div className="settings-row">
                   <button
                     className="btn-outline btn-sm"
-                    style={{ width: "100%" }}
+                    style={{ flex: 1 }}
                     onClick={() =>
                       "Notification" in window && Notification.requestPermission()
                     }
                   >
-                    <IconBell size={14} /> Включить уведомления
+                    <IconBell size={14} /> Разрешить
+                  </button>
+                  <button
+                    className="btn-outline btn-sm"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setShowCfg(false);
+                      onTestNotify?.();
+                    }}
+                    title="Показать, как выглядит уведомление о конце помидорки"
+                  >
+                    Проверить
                   </button>
                 </div>
               </div>

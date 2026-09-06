@@ -277,7 +277,8 @@ export function useTimer(
 
   const start = (id: string, focusMinutes: number) => {
     setTaskId(id);
-    setTargetSec(focusMinutes * 60);
+    // защита от пустого/нулевого поля настроек: иначе таймер завершится сразу
+    setTargetSec(Math.max(1, Math.round(focusMinutes || 25)) * 60);
     setElapsed(0);
     setRunning(true);
   };
