@@ -244,7 +244,12 @@ export function useStore() {
 export type TimerMode = "pomodoro" | "stopwatch";
 
 export function useTimer(
-  onFinish: (taskId: string, elapsedSec: number, completed: boolean) => void
+  onFinish: (
+    taskId: string,
+    elapsedSec: number,
+    completed: boolean,
+    auto?: boolean
+  ) => void
 ) {
   const [taskId, setTaskId] = useState<string | null>(null);
   const [mode, setMode] = useState<TimerMode>("pomodoro");
@@ -264,14 +269,9 @@ export function useTimer(
   useEffect(() => {
     if (mode === "pomodoro" && running && elapsed >= targetSec) {
       setRunning(false);
-      if (taskId) finishRef.current(taskId, elapsed, true);
+      if (taskId) finishRef.current(taskId, elapsed, true, true);
       setElapsed(0);
       setTaskId(null);
-      try {
-        if ("Notification" in window && Notification.permission === "granted") {
-          new Notification("Помидор завершён", { body: "Пора сделать перерыв" });
-        }
-      } catch {}
     }
   }, [elapsed, running, targetSec, mode, taskId]);
 
