@@ -1,156 +1,99 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Legend,
-  ResponsiveContainer, Tooltip, XAxis, YAxis,
+  Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import { STATUS_EMOJI } from "../lib/types";
 import { shiftISO, todayISO } from "../lib/storage";
 import type { useStore } from "../lib/useStore";
 
+type Period = 7 | 30;
+
 export default function Stats({ store }: { store: ReturnType<typeof useStore> }) {
   const { data } = store;
+  const [days, setDays] = useState<Period>(7);
 
-  // План/факт по дням за неделю.
-  const week = useMemo(() => {
+  // Единственный график: сколько часов ушло по дням.
+  const chart = useMemo(() => {
     const today = todayISO();
-    return Array.from({ length: 7 }, (_, i) => {
-      const date = shiftISO(today, i - 6);
-      const dayTasks = data.tasks.filter((t) => t.date === date);
-      const ids = new Set(dayTasks.map((t) => t.id));
-      const spent = data.sessions
-        .filter((s) => s.taskId && ids.has(s.taskId) && s.type === "focus")
-        .reduce((sum, s) => sum + s.durationMinutes, 0);
-      const plan = dayTasks.reduce((sum, t) => sum + t.plannedMinutes, 0);
-      return {
-        day: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][
-          (new Date(date + "T00:00:00").getDay() + 6) % 7
-        ],
-        План: +(plan / 60).toFixed(1),
-        Факт: +(spent / 60).toFixed(1),
-      };
-    });
-  }, [data]);
-
-  // Что реально сделано: задачи с потраченным временем.
-  const byTask = useMemo(() => {
-    const spent = new Map<string, number>();
-    data.sessions
-      .filter((x) => x.type === "focus" && x.taskId)
-      .forEach((x) => {
-        spent.set(x.taskId!, (spent.get(x.taskId!) ?? 0) + x.durationMinutes);
-      });
-    return [...spent.entries()]
-      .map(([id, min]) => {
-        const t = data.tasks.find((x) => x.id === id);
-        return {
-          id,
-          name: t?.title ?? "Удалённая задача",
-          status: t?.status,
-          date: t?.date ?? "",
-          мин: min,
-          plan: t?.plannedMinutes ?? 0,
-        };
-      })
-      .sort((a, b) => b.мин - a.мин);
-  }, [data]);
-
-  // Активность по часам суток.
-  const byHour = useMemo(() => {
-    const arr = Array.from({ length: 24 }, (_, h) => ({ hour: `${h}`, мин: 0 }));
+    // Минуты фокус-сессий, разложенные по датам.
+    const byDate = new Map<string, number>();
     data.sessions
       .filter((s) => s.type === "focus")
       .forEach((s) => {
-        arr[new Date(s.startedAt).getHours()].мин += s.durationMinutes;
+        const d = new Date(s.startedAt);
+        const off = d.getTimezoneOffset();
+        const iso = new Date(d.getTime() - off * 60000).toISOString().slice(0, 10);
+        byDate.set(iso, (byDate.get(iso) ?? 0) + s.durationMinutes);
       });
-    return arr.filter((x) => +x.hour >= 6);
-  }, [data]);
 
-  const focus = data.sessions.filter((s) => s.type === "focus");
-  const doneCount = data.tasks.filter((t) => t.status === "done").length;
-  const closed = data.tasks.filter((t) => t.status !== "planned" && t.status !== "moved").length;
-  const rate = closed ? Math.round((doneCount / closed) * 100) : 0;
+    return Array.from({ length: days }, (_, i) => {
+      const date = shiftISO(today, i - (days - 1));
+      const min = byDate.get(date) ?? 0;
+      const dow = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"][
+        (new Date(date + "T00:00:00").getDay() + 6) % 7
+      ];
+      return {
+        // за неделю — дни недели, за месяц — числа
+        label: days === 7 ? dow : date.slice(8),
+        часы: +(min / 60).toFixed(1),
+        date,
+      };
+    });
+  }, [data.sessions, days]);
+
+  const totalMin = chart.reduce((s, d) => s + d.часы * 60, 0);
+  const activeDays = chart.filter((d) => d.часы > 0).length;
+  const avg = activeDays ? totalMin / activeDays : 0;
+
+  const fmtH = (min: number) => {
+    const h = Math.floor(min / 60);
+    const m = Math.round(min % 60);
+    return h ? `${h}ч ${m}м` : `${m}м`;
+  };
 
   return (
     <div>
       <h2>Статистика</h2>
+
       <p>
-        Выполнено {rate}% · Сессий {focus.length} · Прервано{" "}
-        {focus.filter((s) => !s.completed).length}
+        <button onClick={() => setDays(7)} disabled={days === 7}>
+          Неделя
+        </button>{" "}
+        <button onClick={() => setDays(30)} disabled={days === 30}>
+          Месяц
+        </button>
       </p>
 
-      <h3>План / факт по дням, ч</h3>
-      <div style={{ width: "100%", height: 240 }}>
+      <p>
+        Всего <strong>{fmtH(totalMin)}</strong> · В среднем{" "}
+        <strong>{fmtH(avg)}</strong> в активный день · Активных дней{" "}
+        <strong>{activeDays}</strong> из {days}
+      </p>
+
+      <div style={{ width: "100%", height: 280 }}>
         <ResponsiveContainer>
-          <BarChart data={week}>
+          <BarChart data={chart}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="day" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="План" fill="#bbb" />
-            <Bar dataKey="Факт" fill="#4a7" />
+            <XAxis dataKey="label" interval={days === 7 ? 0 : 2} />
+            <YAxis unit="ч" />
+            <Tooltip
+              formatter={(v: number) => [`${v} ч`, "Потрачено"]}
+              labelFormatter={(_, p) => p?.[0]?.payload?.date ?? ""}
+            />
+            <Bar dataKey="часы" fill="#4a7" />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <h3>Сделано по задачам, мин</h3>
-      {!byTask.length ? (
+      {!totalMin && (
         <p>
           <em>
-            Пока пусто. Запусти таймер на задаче во вкладке «Сегодня» — она
-            появится здесь.
+            Пока пусто. Запусти таймер на задаче во вкладке «Сегодня» — часы
+            появятся здесь.
           </em>
         </p>
-      ) : (
-        <>
-          <div style={{ width: "100%", height: Math.max(160, byTask.length * 34) }}>
-            <ResponsiveContainer>
-              <BarChart data={byTask} layout="vertical" margin={{ left: 10, right: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" width={180} />
-                <Tooltip />
-                <Bar dataKey="мин" fill="#4a7" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <table border={1} cellPadding={6} style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr>
-                <th>Задача</th><th>Статус</th><th>Дата</th><th>Факт / План</th>
-              </tr>
-            </thead>
-            <tbody>
-              {byTask.map((t) => (
-                <tr key={t.id}>
-                  <td>{t.name}</td>
-                  <td>{t.status ? STATUS_EMOJI[t.status] : "—"}</td>
-                  <td>{t.date}</td>
-                  <td>
-                    {t.мин}м / {t.plan}м
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
       )}
 
-      <h3>Активность по часам, мин</h3>
-      <div style={{ width: "100%", height: 200 }}>
-        <ResponsiveContainer>
-          <BarChart data={byHour}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="hour" />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="мин" fill="#47a" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      <p style={{ marginTop: 20 }}>
+      <p style={{ marginTop: 24 }}>
         <button
           onClick={() =>
             confirm("Удалить все задачи и сессии? Действие необратимо.") &&
@@ -158,10 +101,7 @@ export default function Stats({ store }: { store: ReturnType<typeof useStore> })
           }
         >
           🗑️ Сбросить все данные
-        </button>{" "}
-        <small>
-          старые демо-данные могли остаться в браузере — сброс их уберёт
-        </small>
+        </button>
       </p>
     </div>
   );
