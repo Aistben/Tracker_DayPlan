@@ -484,7 +484,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                     {!isActive && !timer.taskId && (
                       <>
                         <button
-                          className="btn-icon"
+                          className="btn-icon btn-run"
                           onClick={() => timer.start(t.id, data.settings.focusMinutes)}
                           title="Запустить таймер"
                         >
