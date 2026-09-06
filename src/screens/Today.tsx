@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { STATUS_EMOJI, STATUS_LABEL, Status, colorByIndex } from "../lib/types";
 import { spentMinutes, tasksForDate, shiftISO, todayISO } from "../lib/storage";
 import Stats from "./Stats";
@@ -100,6 +100,19 @@ export default function Today({ store, timer, date, setDate }: Props) {
         : 0
       : (timer.elapsed % 3600) / 3600;
 
+  // Escape закрывает всплывающие панели.
+  useEffect(() => {
+    if (!showCal && !showCfg) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowCal(false);
+        setShowCfg(false);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showCal, showCfg]);
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -116,13 +129,23 @@ export default function Today({ store, timer, date, setDate }: Props) {
 
   return (
     <>
-      {/* ---------- Шапка: дата + таймер ---------- */}
+      {(showCal || showCfg) && (
+        <div
+          className="pop-backdrop"
+          onClick={() => {
+            setShowCal(false);
+            setShowCfg(false);
+          }}
+        />
+      )}
+
+      {/* ---------- Шапка: дата + таймер + прогресс ---------- */}
       <div className="card">
         <div className="day-head">
-          <div>
+          <div className="pop-anchor">
             <button
               className="date-btn"
-              onClick={() => setShowCal((v) => !v)}
+              onClick={() => { setShowCfg(false); setShowCal((v) => !v); }}
               title="Выбрать дату"
               aria-expanded={showCal}
             >
@@ -136,7 +159,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 : "задач нет"}
             </div>
 
-            <div className={`collapse${showCal ? " open" : ""}`} aria-hidden={!showCal}>
+            <div
+              className={`popover left${showCal ? " open" : ""}`}
+              aria-hidden={!showCal}
+            >
               <Calendar
                 data={data}
                 value={date}
@@ -149,7 +175,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
           </div>
 
           {/* ---------- Таймер ---------- */}
-          <div>
+          <div className="pop-anchor">
             <div className="timer-box">
               <div className="dial-wrap">
                 <svg width={102} height={102} viewBox="0 0 102 102">
@@ -232,7 +258,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                       </button>
                       <button
                         className="btn-icon"
-                        onClick={() => setShowCfg((v) => !v)}
+                        onClick={() => { setShowCal(false); setShowCfg((v) => !v); }}
                         title="Настройки таймера"
                       >
                         ⚙
@@ -246,7 +272,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                     </div>
                     <button
                       className="btn-sm"
-                      onClick={() => setShowCfg((v) => !v)}
+                      onClick={() => { setShowCal(false); setShowCfg((v) => !v); }}
                       title="Настройки таймера"
                     >
                       ⚙ Настройки
@@ -256,7 +282,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
               </div>
             </div>
 
-            <div className={`collapse${showCfg ? " open" : ""}`} aria-hidden={!showCfg}>
+            <div
+              className={`popover right${showCfg ? " open" : ""}`}
+              aria-hidden={!showCfg}
+            >
               <div className="settings-panel">
                 <div className="settings-row">
                   <label>
@@ -309,10 +338,8 @@ export default function Today({ store, timer, date, setDate }: Props) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ---------- Прогресс дня ---------- */}
-      <div className="card">
+        <div className="day-progress">
         <div className="progress-row">
           <span className="progress-nums">
             <b>{fmt(totals.spent)}</b> из {fmt(totals.plan)}
@@ -336,6 +363,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
               ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* ---------- Задачи ---------- */}

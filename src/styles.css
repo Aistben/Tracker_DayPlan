@@ -68,16 +68,16 @@ body {
 
 /* ---------- Каркас ---------- */
 .app {
-  max-width: 940px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 28px 20px 80px;
+  padding: 20px 18px 56px;
 }
 
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 14px;
 }
 
 .brand {
@@ -100,20 +100,20 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 18px;
-  margin-bottom: 16px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
 }
 
 .section-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--text-faint);
-  margin: 0 0 14px;
+  margin: 0 0 10px;
 }
 
 /* ---------- Кнопки ---------- */
@@ -202,9 +202,9 @@ label { cursor: pointer; user-select: none; }
 /* ---------- Шапка дня ---------- */
 .day-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 22px;
+  gap: 18px;
   flex-wrap: wrap;
 }
 
@@ -212,42 +212,49 @@ label { cursor: pointer; user-select: none; }
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 650;
   letter-spacing: -0.015em;
-  padding: 7px 13px;
+  padding: 5px 11px;
   background: transparent;
   border-color: transparent;
 }
 .date-btn:hover:not(:disabled) { background: var(--surface-2); }
 .date-btn .chev { font-size: 10px; color: var(--text-faint); }
-.date-sub { color: var(--text-faint); font-size: 12px; padding-left: 14px; }
+.date-sub { color: var(--text-faint); font-size: 11.5px; padding-left: 12px; margin-top: 1px; }
 
-/* ---------- Плавное раскрытие ---------- */
-.collapse {
-  overflow: hidden;
-  max-height: 0;
+/* ---------- Поповеры: ложатся поверх, не двигают страницу ---------- */
+.pop-anchor { position: relative; }
+
+.popover {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
   opacity: 0;
   visibility: hidden;
-  transition: max-height var(--ease), opacity 0.18s ease,
-    margin-top var(--ease), visibility var(--ease);
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s;
 }
-.collapse.open {
-  /* с запасом: содержимое календаря/настроек короче */
-  max-height: 460px;
-  opacity: 1;
-  visibility: visible;
-  margin-top: 10px;
-}
+.popover.open { opacity: 1; visibility: visible; transform: none; }
+.popover.right { right: 0; }
+.popover.left { left: 0; }
+
+/* невидимый слой: клик мимо закрывает поповер */
+.pop-backdrop { position: fixed; inset: 0; z-index: 30; }
 
 /* ---------- Таймер ---------- */
-.timer-box { display: flex; align-items: center; gap: 16px; }
+.timer-box { display: flex; align-items: center; gap: 13px; }
 .dial-wrap { position: relative; flex-shrink: 0; }
 .dial-track { stroke: var(--surface-3); }
 .dial-time {
   fill: var(--text);
   font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 500;
   letter-spacing: -0.02em;
 }
@@ -259,7 +266,7 @@ label { cursor: pointer; user-select: none; }
   letter-spacing: 0.12em;
 }
 
-.timer-info { min-width: 168px; }
+.timer-info { min-width: 150px; }
 .timer-task {
   font-weight: 600;
   max-width: 210px;
@@ -284,7 +291,7 @@ label { cursor: pointer; user-select: none; }
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.35; transform: scale(0.82); }
 }
-.timer-actions { display: flex; gap: 5px; margin-top: 9px; }
+.timer-actions { display: flex; gap: 4px; margin-top: 7px; }
 
 /* ---------- Прогресс дня ---------- */
 .progress-row {
@@ -304,7 +311,7 @@ label { cursor: pointer; user-select: none; }
   transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .chip {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 10px; font-size: 12px;
@@ -313,14 +320,14 @@ label { cursor: pointer; user-select: none; }
 }
 
 /* ---------- Список задач ---------- */
-.tasks { display: flex; flex-direction: column; gap: 7px; }
+.tasks { display: flex; flex-direction: column; gap: 5px; }
 
 .task {
   display: grid;
   grid-template-columns: 34px 1fr auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 11px 13px;
+  gap: 11px;
+  padding: 8px 11px;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-left: 3px solid var(--task-color, var(--border));
@@ -375,14 +382,14 @@ label { cursor: pointer; user-select: none; }
 .task-edit input[type="text"] { flex: 1; min-width: 0; }
 
 .empty {
-  text-align: center; padding: 34px 18px;
+  text-align: center; padding: 24px 16px;
   color: var(--text-faint); font-size: 13px;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);
 }
 
 /* ---------- Форма добавления ---------- */
-.add-form { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.add-form { display: flex; gap: 7px; margin-top: 11px; flex-wrap: wrap; }
 .add-form input[type="text"] { flex: 1; min-width: 180px; }
 .suffix {
   display: inline-flex; align-items: center; gap: 6px;
@@ -390,11 +397,7 @@ label { cursor: pointer; user-select: none; }
 }
 
 /* ---------- Календарь ---------- */
-.cal {
-  width: 268px; padding: 12px;
-  background: var(--surface); border: 1px solid var(--border-strong);
-  border-radius: var(--radius); box-shadow: var(--shadow-lg);
-}
+.cal { width: 258px; padding: 11px; }
 .cal-head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 9px;
@@ -429,11 +432,11 @@ label { cursor: pointer; user-select: none; }
 /* ---------- Статистика ---------- */
 .stats-head {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 14px; flex-wrap: wrap; margin-bottom: 14px;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 10px;
 }
-.kpis { display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 6px; }
+.kpis { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 4px; }
 .kpi-val {
-  font-size: 21px; font-weight: 650; letter-spacing: -0.02em;
+  font-size: 19px; font-weight: 650; letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 .kpi-lab {
@@ -441,7 +444,7 @@ label { cursor: pointer; user-select: none; }
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 
-.legend { display: flex; flex-wrap: wrap; gap: 7px 14px; margin-top: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 13px; margin-top: 9px; }
 .legend-item {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; color: var(--text-dim);
@@ -461,11 +464,7 @@ label { cursor: pointer; user-select: none; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .spacer { flex: 1; }
 .muted { color: var(--text-faint); font-size: 12px; }
-.settings-panel {
-  padding: 13px 15px; font-size: 13px;
-  background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
+.settings-panel { padding: 12px 14px; font-size: 13px; width: 288px; }
 .settings-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .settings-row + .settings-row {
   margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border);
@@ -499,4 +498,11 @@ label { cursor: pointer; user-select: none; }
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* прогресс внутри шапки дня */
+.day-progress {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
