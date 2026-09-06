@@ -411,13 +411,13 @@ export default function Today({ store, timer, date, setDate }: Props) {
                   className={cls}
                   style={{ ["--task-color" as string]: color }}
                 >
-                  <button
-                    className={`status-btn s-${isActive ? "active" : t.status}`}
-                    onClick={() => store.cycleStatus(t.id)}
-                    title={`${STATUS_LABEL[t.status]} — клик меняет статус`}
+                  {/* только индикатор: статус задаётся кнопками таймера */}
+                  <span
+                    className={`status-mark s-${isActive ? "active" : t.status}`}
+                    title={STATUS_LABEL[isActive ? "active" : t.status]}
                   >
                     <StatusIcon status={isActive ? "active" : t.status} size={18} />
-                  </button>
+                  </span>
 
                   <div className="task-main">
                     {editId === t.id ? (

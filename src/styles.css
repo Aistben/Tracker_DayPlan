@@ -405,17 +405,24 @@ label { cursor: pointer; user-select: none; display: inline-flex; align-items: c
   text-decoration-thickness: 1px;
 }
 
+/* индикатор статуса — не интерактивный */
+.status-mark {
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-4);
+  flex-shrink: 0;
+}
+
 .status-btn {
   width: 28px; height: 28px; padding: 0; border-radius: 50%;
   color: var(--text-4);
 }
 .status-btn:hover:not(:disabled) { background: transparent; color: var(--text-2); }
-.status-btn.s-done { color: var(--st-done); }
-.status-btn.s-active { color: var(--st-active); }
-.status-btn.s-partial { color: var(--st-partial); }
-.status-btn.s-cancelled { color: var(--st-cancelled); }
-.status-btn.s-moved { color: var(--st-moved); }
-.status-btn:not(.s-planned):hover { filter: brightness(1.15); background: transparent; }
+.status-btn.s-done,  .status-mark.s-done      { color: var(--st-done); }
+.status-btn.s-active,.status-mark.s-active    { color: var(--st-active); }
+.status-btn.s-partial,.status-mark.s-partial  { color: var(--st-partial); }
+.status-btn.s-cancelled,.status-mark.s-cancelled { color: var(--st-cancelled); }
+.status-btn.s-moved, .status-mark.s-moved     { color: var(--st-moved); }
 
 /* выполненные и отменённые не гасим целиком — иначе яркий значок пропадает */
 .task.is-done, .task.is-cancelled { opacity: 1; }
