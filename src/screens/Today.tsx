@@ -416,43 +416,11 @@ export default function Today({ store, timer, date, setDate }: Props) {
                     <b>{fmt(spent)}</b> / {fmt(t.plannedMinutes)}
                   </div>
 
-                  <div className="task-actions">
-                    <button
-                      className="btn-icon"
-                      onClick={() => store.addManualTime(t.id, -15)}
-                      title="Списать 15 минут"
-                    >
-                      −15
-                    </button>
-                    <button
-                      className="btn-icon"
-                      onClick={() => store.addManualTime(t.id, 15)}
-                      title="Добавить 15 минут"
-                    >
-                      +15
-                    </button>
-                    <button
-                      className="btn-icon"
-                      onClick={() => startEdit(t)}
-                      title="Изменить"
-                    >
-                      ✎
-                    </button>
-                    <button
-                      className="btn-icon"
-                      onClick={() => store.removeTask(t.id)}
-                      title="Удалить"
-                    >
-                      🗑
-                    </button>
-                  </div>
-
-                  <div>
-                    {isActive ? (
-                      <span className="muted" title="Таймер идёт">⏳</span>
-                    ) : (
+                  <div className="task-tail">
+                    {/* свёрнуто: кнопка запуска; на hover — полный набор */}
+                    {!isActive && (
                       <button
-                        className="btn-icon"
+                        className="btn-icon task-run"
                         onClick={() => timer.start(t.id, data.settings.focusMinutes)}
                         title={
                           timer.taskId
@@ -460,11 +428,56 @@ export default function Today({ store, timer, date, setDate }: Props) {
                             : "Запустить таймер"
                         }
                         disabled={timer.taskId !== null}
-                        style={{ fontSize: 15 }}
+                        style={{ fontSize: 15, position: "absolute", right: 0 }}
                       >
                         ▶
                       </button>
                     )}
+
+                    <div className="task-actions">
+                      {!isActive && (
+                        <button
+                          className="btn-icon"
+                          onClick={() => timer.start(t.id, data.settings.focusMinutes)}
+                          title={
+                            timer.taskId
+                              ? "Сначала останови текущий таймер"
+                              : "Запустить таймер"
+                          }
+                          disabled={timer.taskId !== null}
+                        >
+                          ▶
+                        </button>
+                      )}
+                      <button
+                        className="btn-icon"
+                        onClick={() => store.addManualTime(t.id, -15)}
+                        title="Списать 15 минут"
+                      >
+                        −15
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => store.addManualTime(t.id, 15)}
+                        title="Добавить 15 минут"
+                      >
+                        +15
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => startEdit(t)}
+                        title="Изменить"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => store.removeTask(t.id)}
+                        title="Удалить"
+                      >
+                        🗑
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
