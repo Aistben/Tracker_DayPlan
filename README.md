@@ -50,3 +50,13 @@ windows-раннере. Вкладка Actions → Build Windows exe → арт�
 - Автозапуск, глобальные горячие клавиши
 - Иконка приложения (`src-tauri/icons/icon.ico`)
 - Дизайн по мокапам из `docs/mockups/`
+
+### Активировать CI
+
+Workflow лежит в `ci/build-windows.yml` (не в `.github/`, потому что у агента
+нет прав пушить workflow-файлы). Включается одной командой:
+
+```bash
+mkdir -p .github/workflows && cp ci/build-windows.yml .github/workflows/
+git add .github && git commit -m "ci: сборка exe" && git push
+```
