@@ -158,10 +158,11 @@ export const StatusIcon = ({
         </svg>
       );
     case "active":
+      // кольцо с треугольником: половинная заливка читалась как «чёрный бок»
       return (
         <svg {...s} fill="none">
           <circle cx="12" cy="12" r="9.2" stroke="currentColor" strokeWidth="1.9" />
-          <path d="M12 2.8a9.2 9.2 0 0 1 0 18.4z" fill="currentColor" />
+          <path d="M10.2 8.6v6.8l5.4-3.4z" fill="currentColor" stroke="none" />
         </svg>
       );
     case "partial":
