@@ -65,6 +65,63 @@ export function useStore() {
     }));
   }, []);
 
+  // Правка названия и планового времени.
+  const updateTask = useCallback(
+    (id: string, patch: Partial<Pick<Task, "title" | "plannedMinutes">>) => {
+      setData((d) => ({
+        ...d,
+        tasks: d.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      }));
+    },
+    []
+  );
+
+  // Ручное время: работал без таймера — записываем сессию задним числом.
+  const addManualTime = useCallback((taskId: string, minutes: number) => {
+    if (minutes === 0) return;
+    setData((d) => {
+      const task = d.tasks.find((t) => t.id === taskId);
+      if (!task) return d;
+
+      // Отрицательное значение — списываем с последних сессий.
+      if (minutes < 0) {
+        let left = -minutes;
+        const kept: Session[] = [];
+        const own = d.sessions
+          .filter((x) => x.taskId === taskId && x.type === "focus")
+          .sort((a, b) => b.startedAt - a.startedAt);
+        const others = d.sessions.filter(
+          (x) => !(x.taskId === taskId && x.type === "focus")
+        );
+        for (const s of own) {
+          if (left <= 0) { kept.push(s); continue; }
+          if (s.durationMinutes <= left) { left -= s.durationMinutes; continue; }
+          kept.push({ ...s, durationMinutes: s.durationMinutes - left });
+          left = 0;
+        }
+        return { ...d, sessions: [...others, ...kept] };
+      }
+
+      // Кладём на дату задачи, в середину дня — чтобы попало в нужный столбик.
+      const base = new Date(task.date + "T12:00:00").getTime();
+      return {
+        ...d,
+        sessions: [
+          ...d.sessions,
+          {
+            id: uid(),
+            taskId,
+            startedAt: base,
+            endedAt: base + minutes * 60000,
+            durationMinutes: minutes,
+            type: "focus" as const,
+            completed: true,
+          },
+        ],
+      };
+    });
+  }, []);
+
   const removeTask = useCallback((id: string) => {
     setData((d) => ({
       ...d,
@@ -124,6 +181,8 @@ export function useStore() {
     data,
     colorIndex,
     addTask,
+    updateTask,
+    addManualTime,
     setStatus,
     cycleStatus,
     removeTask,

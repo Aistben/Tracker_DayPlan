@@ -6,7 +6,7 @@ import { shiftISO, todayISO } from "../lib/storage";
 import { colorByIndex } from "../lib/types";
 import type { useStore } from "../lib/useStore";
 
-type Period = 7 | 30;
+type Period = 7 | 30 | 365;
 
 function fmtH(min: number) {
   const h = Math.floor(min / 60);
@@ -72,9 +72,34 @@ export default function Stats({
       return row;
     });
 
+    // Год: 365 столбиков нечитаемы — группируем по месяцам.
+    const finalRows =
+      days === 365
+        ? (() => {
+            const MON = ["янв","фев","мар","апр","май","июн",
+                         "июл","авг","сен","окт","ноя","дек"];
+            const acc = new Map<string, Record<string, string | number>>();
+            rows.forEach((r) => {
+              const d = String(r.date);
+              const key = d.slice(0, 7);
+              if (!acc.has(key)) {
+                acc.set(key, {
+                  label: MON[+d.slice(5, 7) - 1],
+                  date: key,
+                });
+              }
+              const cur = acc.get(key)!;
+              keys.forEach((id) => {
+                cur[id] = (Number(cur[id]) || 0) + (Number(r[id]) || 0);
+              });
+            });
+            return [...acc.values()];
+          })()
+        : rows;
+
     const total = [...totals.values()].reduce((a, b) => a + b, 0);
     const active = dates.filter((d) => (grid.get(d)?.size ?? 0) > 0).length;
-    return { chart: rows, taskKeys: keys, totalMin: total, activeDays: active };
+    return { chart: finalRows, taskKeys: keys, totalMin: total, activeDays: active };
   }, [data.sessions, days]);
 
   const titleOf = (id: string) =>
@@ -102,13 +127,17 @@ export default function Stats({
         </button>{" "}
         <button onClick={() => setDays(30)} disabled={days === 30}>
           Месяц
+        </button>{" "}
+        <button onClick={() => setDays(365)} disabled={days === 365}>
+          Год
         </button>
       </p>
 
       <p>
         Всего <strong>{fmtH(totalMin)}</strong> · В среднем{" "}
         <strong>{fmtH(avg)}</strong> в активный день · Активных дней{" "}
-        <strong>{activeDays}</strong> из {days}
+        <strong>{activeDays}</strong>
+        {days !== 365 && <> из {days}</>}
       </p>
 
       <div style={{ width: "100%", height: compact ? 240 : 300 }}>
@@ -124,7 +153,7 @@ export default function Stats({
             })}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="label" interval={days === 7 ? 0 : 2} />
+            <XAxis dataKey="label" interval={days === 7 ? 0 : days === 30 ? 2 : 0} />
             <YAxis unit={inHours ? "ч" : "м"} allowDecimals={inHours} />
             {/* shared=false — тултип показывает только тот сегмент, на котором курсор */}
             <Tooltip

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { STATUS_EMOJI, STATUS_LABEL, Status, colorByIndex } from "../lib/types";
 import { spentMinutes, tasksForDate, shiftISO } from "../lib/storage";
 import Stats from "./Stats";
+import Calendar from "./Calendar";
 import type { useStore, useTimer } from "../lib/useStore";
 
 type Props = {
@@ -31,6 +32,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
   const [title, setTitle] = useState("");
   const [planned, setPlanned] = useState(30);
   const [showCfg, setShowCfg] = useState(false);
+  const [showCal, setShowCal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editPlan, setEditPlan] = useState(30);
 
   const tasks = useMemo(
     () => tasksForDate(data.tasks, date).filter((t) => t.status !== "moved"),
@@ -46,6 +51,21 @@ export default function Today({ store, timer, date, setDate }: Props) {
   }, [tasks, data.sessions]);
 
   const pct = totals.plan ? Math.round((totals.spent / totals.plan) * 100) : 0;
+  const startEdit = (t: { id: string; title: string; plannedMinutes: number }) => {
+    setEditId(t.id);
+    setEditTitle(t.title);
+    setEditPlan(t.plannedMinutes);
+  };
+  const saveEdit = (id: string) => {
+    if (editTitle.trim()) {
+      store.updateTask(id, {
+        title: editTitle.trim(),
+        plannedMinutes: Math.max(5, editPlan),
+      });
+    }
+    setEditId(null);
+  };
+
   const activeTask = data.tasks.find((t) => t.id === timer.taskId) ?? null;
   const dialColor = activeTask
     ? colorByIndex(colorIndex.get(activeTask.id) ?? 0)
@@ -79,14 +99,37 @@ export default function Today({ store, timer, date, setDate }: Props) {
         {/* дата */}
         <div>
           <h2 style={{ margin: 0 }}>
-            <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">
-              ⬅️
-            </button>{" "}
-            {date}{" "}
-            <button onClick={() => setDate(shiftISO(date, 1))} title="Следующий день">
-              ➡️
+            <button
+              onClick={() => setShowCal((v) => !v)}
+              title="Выбрать дату"
+              style={{ font: "inherit", cursor: "pointer", padding: "2px 8px" }}
+            >
+              📅 {date} {showCal ? "▴" : "▾"}
             </button>
           </h2>
+
+          {/* выпадает так же плавно, как настройки таймера */}
+          <div
+            style={{
+              overflow: "hidden",
+              maxHeight: showCal ? 340 : 0,
+              opacity: showCal ? 1 : 0,
+              transition:
+                "max-height .25s ease, opacity .2s ease, margin-top .25s ease",
+              marginTop: showCal ? 8 : 0,
+              visibility: showCal ? "visible" : "hidden",
+            }}
+            aria-hidden={!showCal}
+          >
+            <Calendar
+              data={data}
+              value={date}
+              onPick={(d) => {
+                setDate(d);
+                setShowCal(false);
+              }}
+            />
+          </div>
         </div>
 
         {/* циферблат — прижат к правому краю, параллельно дате */}
@@ -278,13 +321,14 @@ export default function Today({ store, timer, date, setDate }: Props) {
         <colgroup>
           <col style={{ width: 46 }} />
           <col />
+          <col style={{ width: 132 }} />
           <col style={{ width: 96 }} />
-          <col style={{ width: 46 }} />
+          <col style={{ width: 76 }} />
         </colgroup>
         <thead>
           <tr>
             {/* один заголовок на всю ширину таблицы */}
-            <th colSpan={4} style={{ textAlign: "center" }}>
+            <th colSpan={5} style={{ textAlign: "center" }}>
               Задача
             </th>
           </tr>
@@ -321,7 +365,58 @@ export default function Today({ store, timer, date, setDate }: Props) {
                       marginRight: 8,
                     }}
                   />
-                  {t.title}
+                  {editId === t.id ? (
+                    <>
+                      <input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveEdit(t.id);
+                          if (e.key === "Escape") setEditId(null);
+                        }}
+                        autoFocus
+                        style={{ width: "55%" }}
+                      />{" "}
+                      <input
+                        type="number"
+                        min={5}
+                        step={5}
+                        value={editPlan}
+                        onChange={(e) => setEditPlan(+e.target.value)}
+                        style={{ width: 60 }}
+                      />{" "}
+                      мин{" "}
+                      <button onClick={() => saveEdit(t.id)} title="Сохранить">
+                        💾
+                      </button>{" "}
+                      <button onClick={() => setEditId(null)} title="Отмена">
+                        ↩️
+                      </button>
+                    </>
+                  ) : (
+                    <span
+                      onDoubleClick={() => startEdit(t)}
+                      title="Двойной клик — переименовать"
+                      style={{ cursor: "text" }}
+                    >
+                      {t.title}{" "}
+                      <small style={{ opacity: 0.5 }}>
+                        {fmt(spentMinutes(data.sessions, t.id))} /{" "}
+                        {fmt(t.plannedMinutes)}
+                      </small>
+                    </span>
+                  )}
+                </td>
+                <td style={{ whiteSpace: "nowrap", fontSize: 12 }}>
+                  <button onClick={() => store.addManualTime(t.id, 15)} title="+15 минут">
+                    +15м
+                  </button>{" "}
+                  <button onClick={() => store.addManualTime(t.id, -15)} title="−15 минут">
+                    −15м
+                  </button>{" "}
+                  <button onClick={() => startEdit(t)} title="Редактировать">
+                    ✏️
+                  </button>
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   {isActive ? (
@@ -345,7 +440,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
           })}
           {!tasks.length && (
             <tr>
-              <td colSpan={4}>
+              <td colSpan={5}>
                 <em>Пусто. Добавь задачу ниже.</em>
               </td>
             </tr>
