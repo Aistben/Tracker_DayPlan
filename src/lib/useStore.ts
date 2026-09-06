@@ -172,10 +172,22 @@ export function useStore() {
   }, []);
 
   // Единый порядковый номер задачи -> цвет. Общий для списка и графика.
+  // Нумеруем в пределах дня: иначе за неделю индексы уходят далеко за размер
+  // палитры и соседние задачи одного дня получают одинаковый цвет.
   const colorIndex = new Map<string, number>();
-  [...data.tasks]
-    .sort((a, b) => a.createdAt - b.createdAt)
-    .forEach((t, i) => colorIndex.set(t.id, i));
+  {
+    const byDate = new Map<string, typeof data.tasks>();
+    data.tasks.forEach((t) => {
+      const arr = byDate.get(t.date) ?? [];
+      arr.push(t);
+      byDate.set(t.date, arr);
+    });
+    byDate.forEach((arr) => {
+      [...arr]
+        .sort((a, b) => a.order - b.order || a.createdAt - b.createdAt)
+        .forEach((t, i) => colorIndex.set(t.id, i));
+    });
+  }
 
   return {
     data,
@@ -237,14 +249,14 @@ export function useTimer(
 
   // Прерванная сессия всё равно пишется: время потрачено (CONCEPT §5.2).
   const stop = () => {
-    if (elapsed > 0 && taskId) finishRef.current(taskId, elapsed, false);
+    if (taskId) finishRef.current(taskId, elapsed, false);
     setRunning(false);
     setElapsed(0);
     setTaskId(null);
   };
 
   const complete = () => {
-    if (elapsed > 0 && taskId) finishRef.current(taskId, elapsed, true);
+    if (taskId) finishRef.current(taskId, elapsed, true);
     setRunning(false);
     setElapsed(0);
     setTaskId(null);
