@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Today from "./screens/Today";
 import { useStore, useTimer } from "./lib/useStore";
 import { todayISO } from "./lib/storage";
+import { IconSun, IconMoon, IconCheck } from "./lib/icons";
 import "./styles.css";
 
 export default function App() {
@@ -59,6 +60,7 @@ export default function App() {
     <div className="app">
       <div className="topbar">
         <div className="brand">
+          <i className="brand-dot" />
           Tracker DayPlan <small>прототип</small>
         </div>
         <button
@@ -66,7 +68,7 @@ export default function App() {
           onClick={() => setLight((v) => !v)}
           title={light ? "Тёмная тема" : "Светлая тема"}
         >
-          {light ? "🌙" : "☀"}
+          {light ? <IconMoon size={16} /> : <IconSun size={16} />}
         </button>
       </div>
 
@@ -74,7 +76,9 @@ export default function App() {
 
       {toast && (
         <div className="toast" role="status">
-          <span>✓</span>
+          <span className="tick">
+            <IconCheck size={12} />
+          </span>
           {toast}
         </div>
       )}

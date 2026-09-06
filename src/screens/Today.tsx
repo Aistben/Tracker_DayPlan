@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { STATUS_EMOJI, STATUS_LABEL, Status, colorByIndex } from "../lib/types";
+import {
+  IconPlay, IconPause, IconStop, IconCheck, IconSettings, IconEdit,
+  IconTrash, IconPlus, IconMinus, IconChevronDown, IconCalendar,
+  IconBell, IconTimer, IconTomato, IconMoon, StatusIcon,
+} from "../lib/icons";
 import { spentMinutes, tasksForDate, shiftISO, todayISO } from "../lib/storage";
 import Stats from "./Stats";
 import Calendar from "./Calendar";
@@ -149,14 +154,26 @@ export default function Today({ store, timer, date, setDate }: Props) {
               title="Выбрать дату"
               aria-expanded={showCal}
             >
+              <IconCalendar size={16} className="cal-ico" />
               {humanDate(date)}
-              <span className="chev">{showCal ? "▲" : "▼"}</span>
+              <IconChevronDown size={14} className="chev" />
             </button>
             <div className="date-sub">
-              {rel ? `${rel} · ` : ""}
-              {tasks.length
-                ? `${tasks.length} задач · ${openCount} открыто`
-                : "задач нет"}
+              {rel && (
+                <>
+                  <span>{rel}</span>
+                  <i className="dot-sep" />
+                </>
+              )}
+              {tasks.length ? (
+                <>
+                  <span>{tasks.length} задач</span>
+                  <i className="dot-sep" />
+                  <span>{openCount} открыто</span>
+                </>
+              ) : (
+                <span>задач нет</span>
+              )}
             </div>
 
             <div
@@ -234,7 +251,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                         onClick={() => timer.setRunning(!timer.running)}
                         title={timer.running ? "Пауза" : "Продолжить"}
                       >
-                        {timer.running ? "⏸" : "▶"}
+                        {timer.running ? <IconPause size={15} /> : <IconPlay size={15} />}
                       </button>
                       <button
                         className="btn-icon"
@@ -244,7 +261,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                         }}
                         title="Стоп — время засчитать, задача не доделана"
                       >
-                        ⏹
+                        <IconStop size={14} />
                       </button>
                       <button
                         className="btn-primary btn-sm"
@@ -254,14 +271,14 @@ export default function Today({ store, timer, date, setDate }: Props) {
                         }}
                         title="Готово — засчитать время и закрыть задачу"
                       >
-                        ✓ Готово
+                        <IconCheck size={14} /> Готово
                       </button>
                       <button
                         className="btn-icon"
                         onClick={() => { setShowCal(false); setShowCfg((v) => !v); }}
                         title="Настройки таймера"
                       >
-                        ⚙
+                        <IconSettings size={15} />
                       </button>
                     </div>
                   </>
@@ -271,11 +288,11 @@ export default function Today({ store, timer, date, setDate }: Props) {
                       Таймер не запущен
                     </div>
                     <button
-                      className="btn-sm"
+                      className="btn-outline btn-sm"
                       onClick={() => { setShowCal(false); setShowCfg((v) => !v); }}
                       title="Настройки таймера"
                     >
-                      ⚙ Настройки
+                      <IconSettings size={14} /> Настройки
                     </button>
                   </>
                 )}
@@ -288,50 +305,50 @@ export default function Today({ store, timer, date, setDate }: Props) {
             >
               <div className="settings-panel">
                 <div className="settings-row">
-                  <label>
-                    <input
-                      type="radio"
-                      checked={timer.mode === "pomodoro"}
-                      onChange={() => timer.setMode("pomodoro")}
-                    />
-                    🍅 Помидоро
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      checked={timer.mode === "stopwatch"}
-                      onChange={() => timer.setMode("stopwatch")}
-                    />
-                    ⏱ Секундомер
-                  </label>
+                  <div className="mode-switch">
+                    <button
+                      className={timer.mode === "pomodoro" ? "on" : ""}
+                      onClick={() => timer.setMode("pomodoro")}
+                    >
+                      <IconTomato size={15} /> Помидоро
+                    </button>
+                    <button
+                      className={timer.mode === "stopwatch" ? "on" : ""}
+                      onClick={() => timer.setMode("stopwatch")}
+                    >
+                      <IconTimer size={15} /> Секундомер
+                    </button>
+                  </div>
                 </div>
                 <div className="settings-row">
-                  <span className="muted">Фокус</span>
+                  <span className="settings-lab">Фокус</span>
                   <input
                     type="number" min={1}
                     value={data.settings.focusMinutes}
                     onChange={(e) =>
                       store.updateSettings({ focusMinutes: +e.target.value })
                     }
-                    style={{ width: 62 }}
+                    style={{ width: 58 }}
                   />
-                  <span className="muted">Перерыв</span>
+                  <span className="settings-lab">Перерыв</span>
                   <input
                     type="number" min={1}
                     value={data.settings.shortBreakMinutes}
                     onChange={(e) =>
                       store.updateSettings({ shortBreakMinutes: +e.target.value })
                     }
-                    style={{ width: 62 }}
+                    style={{ width: 58 }}
                   />
-                  <span className="spacer" />
+                </div>
+                <div className="settings-row">
                   <button
-                    className="btn-sm"
+                    className="btn-outline btn-sm"
+                    style={{ width: "100%" }}
                     onClick={() =>
                       "Notification" in window && Notification.requestPermission()
                     }
                   >
-                    🔔 Уведомления
+                    <IconBell size={14} /> Включить уведомления
                   </button>
                 </div>
               </div>
@@ -356,9 +373,12 @@ export default function Today({ store, timer, date, setDate }: Props) {
             {(Object.keys(STATUS_EMOJI) as Status[])
               .filter((s) => totals.counts[s])
               .map((s) => (
-                <span key={s} className="chip">
-                  {STATUS_EMOJI[s]} {STATUS_LABEL[s]}
-                  <b style={{ color: "var(--text)" }}>{totals.counts[s]}</b>
+                <span key={s} className={`chip st-${s}`}>
+                  <span className={`st status-btn s-${s}`} style={{ width: 14, height: 14 }}>
+                    <StatusIcon status={s} size={14} />
+                  </span>
+                  {STATUS_LABEL[s]}
+                  <b>{totals.counts[s]}</b>
                 </span>
               ))}
           </div>
@@ -376,8 +396,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
               const isActive = timer.taskId === t.id;
               const spent = spentMinutes(data.sessions, t.id);
               const color = colorByIndex(colorIndex.get(t.id) ?? 0);
+              const over = spent > t.plannedMinutes;
               const cls = [
                 "task",
+                over ? "is-over" : "",
                 isActive ? "is-active" : "",
                 t.status === "done" ? "is-done" : "",
                 t.status === "cancelled" ? "is-cancelled" : "",
@@ -390,11 +412,11 @@ export default function Today({ store, timer, date, setDate }: Props) {
                   style={{ ["--task-color" as string]: color }}
                 >
                   <button
-                    className="status-btn"
+                    className={`status-btn s-${isActive ? "active" : t.status}`}
                     onClick={() => store.cycleStatus(t.id)}
                     title={`${STATUS_LABEL[t.status]} — клик меняет статус`}
                   >
-                    {STATUS_EMOJI[isActive ? "active" : t.status]}
+                    <StatusIcon status={isActive ? "active" : t.status} size={18} />
                   </button>
 
                   <div className="task-main">
@@ -418,9 +440,9 @@ export default function Today({ store, timer, date, setDate }: Props) {
                           style={{ width: 62 }}
                         />
                         <button className="btn-primary btn-sm" onClick={() => saveEdit(t.id)}>
-                          Сохранить
+                          <IconCheck size={13} />
                         </button>
-                        <button className="btn-sm" onClick={() => setEditId(null)}>
+                        <button className="btn-outline btn-sm" onClick={() => setEditId(null)}>
                           Отмена
                         </button>
                       </div>
@@ -433,9 +455,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                         >
                           {t.title}
                         </div>
-                        {isActive && (
-                          <div className="task-meta">выполняется сейчас</div>
-                        )}
+                        {isActive && <div className="task-note">выполняется</div>}
                       </>
                     )}
                   </div>
@@ -461,48 +481,46 @@ export default function Today({ store, timer, date, setDate }: Props) {
                   </div>
 
                   <div className="task-tail">
-                    {/* ▶ показываем, только если таймер свободен */}
                     {!isActive && !timer.taskId && (
-                      <button
-                        className="btn-icon"
-                        onClick={() => timer.start(t.id, data.settings.focusMinutes)}
-                        title="Запустить таймер"
-                        style={{ fontSize: 15 }}
-                      >
-                        ▶
-                      </button>
+                      <>
+                        <button
+                          className="btn-icon"
+                          onClick={() => timer.start(t.id, data.settings.focusMinutes)}
+                          title="Запустить таймер"
+                        >
+                          <IconPlay size={14} />
+                        </button>
+                        <i className="divider" />
+                      </>
                     )}
-
-                    <div className="task-actions">
-                      <button
-                        className="btn-icon"
-                        onClick={() => store.addManualTime(t.id, -15)}
-                        title="Списать 15 минут"
-                      >
-                        −15
-                      </button>
-                      <button
-                        className="btn-icon"
-                        onClick={() => store.addManualTime(t.id, 15)}
-                        title="Добавить 15 минут"
-                      >
-                        +15
-                      </button>
-                      <button
-                        className="btn-icon"
-                        onClick={() => startEdit(t)}
-                        title="Изменить"
-                      >
-                        ✎
-                      </button>
-                      <button
-                        className="btn-icon"
-                        onClick={() => store.removeTask(t.id)}
-                        title="Удалить"
-                      >
-                        🗑
-                      </button>
-                    </div>
+                    <button
+                      className="btn-icon sm"
+                      onClick={() => store.addManualTime(t.id, -15)}
+                      title="Списать 15 минут"
+                    >
+                      <IconMinus size={13} />
+                    </button>
+                    <button
+                      className="btn-icon sm"
+                      onClick={() => store.addManualTime(t.id, 15)}
+                      title="Добавить 15 минут"
+                    >
+                      <IconPlus size={13} />
+                    </button>
+                    <button
+                      className="btn-icon sm"
+                      onClick={() => startEdit(t)}
+                      title="Изменить"
+                    >
+                      <IconEdit size={13} />
+                    </button>
+                    <button
+                      className="btn-icon sm danger"
+                      onClick={() => store.removeTask(t.id)}
+                      title="Удалить"
+                    >
+                      <IconTrash size={13} />
+                    </button>
                   </div>
                 </div>
               );
@@ -533,18 +551,18 @@ export default function Today({ store, timer, date, setDate }: Props) {
             мин
           </span>
           <button className="btn-primary" type="submit">
-            Добавить
+            <IconPlus size={15} /> Добавить
           </button>
         </form>
 
         {openCount > 0 && (
           <div style={{ marginTop: 14 }}>
             <button
-              className="btn-sm"
+              className="btn-outline btn-sm"
               onClick={() => store.carryOver(date, shiftISO(date, 1))}
               title="Незакрытые задачи переедут на следующий день"
             >
-              🌙 Закрыть день — перенести {openCount} на завтра
+              <IconMoon size={14} /> Закрыть день — перенести {openCount} на завтра
             </button>
           </div>
         )}

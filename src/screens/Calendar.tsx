@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { todayISO } from "../lib/storage";
 import type { AppData } from "../lib/types";
+import { IconChevronLeft, IconChevronRight } from "../lib/icons";
 
 const DOW = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const MONTHS = [
@@ -63,14 +64,14 @@ export default function Calendar({
   return (
     <div className="cal">
       <div className="cal-head">
-        <button className="btn-icon" onClick={() => move(-1)} title="Предыдущий месяц">
-          ‹
+        <button className="btn-icon sm" onClick={() => move(-1)} title="Предыдущий месяц">
+          <IconChevronLeft size={15} />
         </button>
         <span className="cal-title">
           {MONTHS[ym.m]} {ym.y}
         </span>
-        <button className="btn-icon" onClick={() => move(1)} title="Следующий месяц">
-          ›
+        <button className="btn-icon sm" onClick={() => move(1)} title="Следующий месяц">
+          <IconChevronRight size={15} />
         </button>
       </div>
 
@@ -108,9 +109,9 @@ export default function Calendar({
         })}
       </div>
 
-      <div style={{ marginTop: 10, textAlign: "center" }}>
+      <div className="cal-foot">
         <button className="btn-sm" onClick={() => onPick(today)}>
-          Перейти к сегодня
+          Сегодня
         </button>
       </div>
     </div>

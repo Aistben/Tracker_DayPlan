@@ -148,11 +148,7 @@ export default function Stats({
         <div>
           <div className="kpi-val">
             {activeDays}
-            {days !== 365 && (
-              <span style={{ color: "var(--text-faint)", fontSize: 14 }}>
-                {" "}/ {days}
-              </span>
-            )}
+            {days !== 365 && <span className="sub"> / {days}</span>}
           </div>
           <div className="kpi-lab">активных дней</div>
         </div>
@@ -170,18 +166,18 @@ export default function Stats({
               return row;
             })}
           >
-            <CartesianGrid strokeDasharray="2 4" stroke="var(--border)" vertical={false} />
+            <CartesianGrid strokeDasharray="2 5" stroke="var(--border)" vertical={false} opacity={0.6} />
             <XAxis
               dataKey="label"
               interval={days === 7 ? 0 : days === 30 ? 2 : 0}
-              tick={{ fill: "var(--text-faint)", fontSize: 11 }}
-              axisLine={{ stroke: "var(--border)" }}
+              tick={{ fill: "var(--text-4)", fontSize: 10.5 }}
+              axisLine={false}
               tickLine={false}
             />
             <YAxis
               unit={inHours ? "ч" : "м"}
               allowDecimals={inHours}
-              tick={{ fill: "var(--text-faint)", fontSize: 11 }}
+              tick={{ fill: "var(--text-4)", fontSize: 10.5 }}
               axisLine={false}
               tickLine={false}
               width={38}
@@ -189,13 +185,26 @@ export default function Stats({
             {/* shared=false — тултип показывает только тот сегмент, на котором курсор */}
             <Tooltip
               shared={false}
-              cursor={{ fill: "rgba(125,140,170,0.09)" }}
-              wrapperClassName="tooltip"
-              formatter={(v: number, name: string) => [
-                inHours ? `${v} ч` : `${v} мин`,
-                titleOf(name),
-              ]}
-              labelFormatter={(_, p) => p?.[0]?.payload?.date ?? ""}
+              cursor={{ fill: "rgba(125,140,170,0.07)" }}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const p = payload[0];
+                return (
+                  <div className="tooltip-box">
+                    <div className="t-date">{p.payload?.date}</div>
+                    <div className="t-row">
+                      <i
+                        className="legend-swatch"
+                        style={{ background: p.color }}
+                      />
+                      <span className="t-name">{titleOf(String(p.dataKey))}</span>
+                      <span className="t-val">
+                        {inHours ? `${p.value} ч` : `${p.value} мин`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }}
             />
             {taskKeys.map((id, i) => (
               <Bar
@@ -203,7 +212,7 @@ export default function Stats({
                 dataKey={id}
                 stackId="day"
                 fill={colorByIndex(colorIndex.get(id) ?? 0)}
-                radius={i === taskKeys.length - 1 ? [3, 3, 0, 0] : undefined}
+                radius={i === taskKeys.length - 1 ? [4, 4, 0, 0] : undefined}
                 animationDuration={420}
               />
             ))}
@@ -236,7 +245,7 @@ export default function Stats({
 
       <div style={{ marginTop: 18, textAlign: "right" }}>
         <button
-          className="btn-ghost btn-sm muted"
+          className="btn-sm muted"
           onClick={() =>
             confirm("Удалить все задачи и сессии? Действие необратимо.") &&
             store.reset()
