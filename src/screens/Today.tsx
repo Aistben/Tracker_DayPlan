@@ -441,7 +441,23 @@ export default function Today({ store, timer, date, setDate }: Props) {
                   </div>
 
                   <div className="task-time">
-                    <b>{fmt(spent)}</b> / {fmt(t.plannedMinutes)}
+                    <div>
+                      <b>{spent ? fmt(spent) : "0м"}</b>
+                      <span className="sep">/</span>
+                      {fmt(t.plannedMinutes)}
+                    </div>
+                    <div className="task-bar">
+                      <i
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            t.plannedMinutes
+                              ? (spent / t.plannedMinutes) * 100
+                              : 0
+                          )}%`,
+                        }}
+                      />
+                    </div>
                   </div>
 
                   <div className="task-tail">

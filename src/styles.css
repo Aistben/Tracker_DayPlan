@@ -324,7 +324,7 @@ label { cursor: pointer; user-select: none; }
 
 .task {
   display: grid;
-  grid-template-columns: 34px 1fr auto auto;
+  grid-template-columns: 34px 1fr 112px 148px;
   align-items: center;
   gap: 11px;
   padding: 8px 11px;
@@ -363,10 +363,36 @@ label { cursor: pointer; user-select: none; }
 }
 
 .task-time {
-  font-size: 13px; font-variant-numeric: tabular-nums;
-  white-space: nowrap; color: var(--text-dim); text-align: right;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-faint);
+  text-align: left;
+  line-height: 1.25;
 }
-.task-time b { color: var(--text); font-weight: 600; }
+.task-time b {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.task-time .sep { margin: 0 2px; opacity: 0.5; }
+
+/* мини-шкала выполнения под цифрами */
+.task-bar {
+  margin-top: 4px;
+  height: 3px;
+  width: 84px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.task-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--task-color, var(--accent));
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 /* Действия в конце строки — всегда видны. */
 .task-tail {
@@ -376,6 +402,7 @@ label { cursor: pointer; user-select: none; }
   gap: 3px;
   min-height: 30px;
 }
+.task-tail .btn-icon { padding: 4px 7px; font-size: 12.5px; }
 .task-actions { display: flex; gap: 3px; }
 
 .task-edit { display: flex; gap: 7px; align-items: center; }
@@ -488,8 +515,9 @@ label { cursor: pointer; user-select: none; }
 
 @media (max-width: 640px) {
   .app { padding: 18px 13px 60px; }
-  .task { grid-template-columns: 30px 1fr auto; row-gap: 8px; }
-  .task-time { grid-column: 2 / -1; text-align: left; }
+  .task { grid-template-columns: 30px 1fr auto; row-gap: 7px; }
+  .task-time { grid-column: 2 / 3; }
+  .task-bar { width: 100%; max-width: 140px; }
   .timer-box { width: 100%; }
 }
 
