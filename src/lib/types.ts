@@ -17,6 +17,15 @@ export const STATUS_MARKER: Record<Status, string> = {
   moved: "→",
 };
 
+export const STATUS_EMOJI: Record<Status, string> = {
+  planned: "⬜",
+  active: "⏳",
+  done: "✅",
+  partial: "🟨",
+  cancelled: "❌",
+  moved: "➡️",
+};
+
 export const STATUS_LABEL: Record<Status, string> = {
   planned: "Запланировано",
   active: "В работе",

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { STATUS_LABEL, Status } from "../lib/types";
+import { STATUS_EMOJI, STATUS_LABEL, Status } from "../lib/types";
 import { spentMinutes, tasksForDate, shiftISO } from "../lib/storage";
 import type { useStore, useTimer } from "../lib/useStore";
 
@@ -12,16 +12,6 @@ type Props = {
 
 // Категория скрыта в UI прототипа, но остаётся в модели ради статистики.
 const DEFAULT_CATEGORY_ID = "work";
-
-// Эмодзи для статусов — понятнее символов ○◐●.
-const STATUS_EMOJI: Record<Status, string> = {
-  planned: "⬜",
-  active: "⏳",
-  done: "✅",
-  partial: "🟨",
-  cancelled: "❌",
-  moved: "➡️",
-};
 
 function mmss(sec: number) {
   const m = Math.floor(sec / 60);
@@ -81,7 +71,18 @@ export default function Today({ store, timer, date, setDate }: Props) {
           .join("   ·   ")}
       </p>
 
-      <table border={1} cellPadding={6} style={{ width: "100%", borderCollapse: "collapse" }}>
+      <table
+        border={1}
+        cellPadding={6}
+        style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}
+      >
+        <colgroup>
+          <col style={{ width: 46 }} />
+          <col />
+          <col style={{ width: 130 }} />
+          <col style={{ width: 210 }} />
+          <col style={{ width: 46 }} />
+        </colgroup>
         <thead>
           <tr>
             <th>—</th><th>Задача</th>
@@ -124,6 +125,8 @@ export default function Today({ store, timer, date, setDate }: Props) {
                           fontFamily: "monospace",
                           fontSize: 16,
                           opacity: timer.running ? 1 : 0.5,
+                          display: "inline-block",
+                          width: 52,
                         }}
                       >
                         {mmss(
@@ -150,6 +153,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                       onClick={() => timer.start(t.id, data.settings.focusMinutes)}
                       title="Запустить таймер"
                       disabled={timer.taskId !== null}
+                      style={{ width: "100%" }}
                     >
                       ▶️ старт
                     </button>

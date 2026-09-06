@@ -63,7 +63,8 @@ export function save(data: AppData): void {
   }
 }
 
-// Демо-данные, чтобы графики не были пустыми при первом запуске.
+// Стартовый набор задач. Сессий нет — статистика заполняется
+// только реальной работой по таймеру.
 function seed(): AppData {
   const data = empty();
   const today = todayISO();
@@ -89,38 +90,6 @@ function seed(): AppData {
       doneAt: null,
     });
   });
-
-  // История за прошлые 6 дней — только сессии, для недельного графика.
-  const cats = ["work", "work", "study", "sport", "home"];
-  for (let d = 1; d <= 6; d++) {
-    const date = shiftISO(today, -d);
-    const count = 4 + Math.floor(Math.random() * 6);
-    for (let s = 0; s < count; s++) {
-      const hour = 9 + Math.floor(Math.random() * 11);
-      const start = new Date(date + "T00:00:00").getTime() + hour * 3600_000;
-      const taskId = uid();
-      data.tasks.push({
-        id: taskId,
-        title: "Задача " + (s + 1),
-        status: Math.random() > 0.25 ? "done" : "partial",
-        categoryId: cats[s % cats.length],
-        plannedMinutes: 30,
-        date,
-        order: s,
-        createdAt: start,
-        doneAt: start,
-      });
-      data.sessions.push({
-        id: uid(),
-        taskId,
-        startedAt: start,
-        endedAt: start + 25 * 60000,
-        durationMinutes: 25,
-        type: "focus",
-        completed: Math.random() > 0.2,
-      });
-    }
-  }
 
   save(data);
   return data;

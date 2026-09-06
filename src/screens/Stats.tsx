@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import {
-  Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart,
+  Bar, BarChart, CartesianGrid, Legend,
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { STATUS_EMOJI } from "../lib/types";
 import { shiftISO, todayISO } from "../lib/storage";
 import type { useStore } from "../lib/useStore";
 
@@ -30,20 +31,27 @@ export default function Stats({ store }: { store: ReturnType<typeof useStore> })
     });
   }, [data]);
 
-  // Разбивка по категориям.
-  const byCat = useMemo(() => {
-    const map = new Map<string, number>();
+  // Что реально сделано: задачи с потраченным временем.
+  const byTask = useMemo(() => {
+    const spent = new Map<string, number>();
     data.sessions
-      .filter((s) => s.type === "focus")
-      .forEach((s) => {
-        const t = data.tasks.find((x) => x.id === s.taskId);
-        if (!t) return;
-        map.set(t.categoryId, (map.get(t.categoryId) ?? 0) + s.durationMinutes);
+      .filter((x) => x.type === "focus" && x.taskId)
+      .forEach((x) => {
+        spent.set(x.taskId!, (spent.get(x.taskId!) ?? 0) + x.durationMinutes);
       });
-    return [...map.entries()].map(([id, min]) => ({
-      name: data.categories.find((c) => c.id === id)?.name ?? id,
-      value: +(min / 60).toFixed(1),
-    }));
+    return [...spent.entries()]
+      .map(([id, min]) => {
+        const t = data.tasks.find((x) => x.id === id);
+        return {
+          id,
+          name: t?.title ?? "Удалённая задача",
+          status: t?.status,
+          date: t?.date ?? "",
+          мин: min,
+          plan: t?.plannedMinutes ?? 0,
+        };
+      })
+      .sort((a, b) => b.мин - a.мин);
   }, [data]);
 
   // Активность по часам суток.
@@ -61,7 +69,6 @@ export default function Stats({ store }: { store: ReturnType<typeof useStore> })
   const doneCount = data.tasks.filter((t) => t.status === "done").length;
   const closed = data.tasks.filter((t) => t.status !== "planned" && t.status !== "moved").length;
   const rate = closed ? Math.round((doneCount / closed) * 100) : 0;
-  const colors = ["#4a7", "#47a", "#a47", "#aa4", "#7a4", "#a74"];
 
   return (
     <div>
@@ -86,20 +93,49 @@ export default function Stats({ store }: { store: ReturnType<typeof useStore> })
         </ResponsiveContainer>
       </div>
 
-      <h3>По категориям, ч</h3>
-      <div style={{ width: "100%", height: 240 }}>
-        <ResponsiveContainer>
-          <PieChart>
-            <Pie data={byCat} dataKey="value" nameKey="name" outerRadius={80} label>
-              {byCat.map((_, i) => (
-                <Cell key={i} fill={colors[i % colors.length]} />
+      <h3>Сделано по задачам, мин</h3>
+      {!byTask.length ? (
+        <p>
+          <em>
+            Пока пусто. Запусти таймер на задаче во вкладке «Сегодня» — она
+            появится здесь.
+          </em>
+        </p>
+      ) : (
+        <>
+          <div style={{ width: "100%", height: Math.max(160, byTask.length * 34) }}>
+            <ResponsiveContainer>
+              <BarChart data={byTask} layout="vertical" margin={{ left: 10, right: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis type="category" dataKey="name" width={180} />
+                <Tooltip />
+                <Bar dataKey="мин" fill="#4a7" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <table border={1} cellPadding={6} style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr>
+                <th>Задача</th><th>Статус</th><th>Дата</th><th>Факт / План</th>
+              </tr>
+            </thead>
+            <tbody>
+              {byTask.map((t) => (
+                <tr key={t.id}>
+                  <td>{t.name}</td>
+                  <td>{t.status ? STATUS_EMOJI[t.status] : "—"}</td>
+                  <td>{t.date}</td>
+                  <td>
+                    {t.мин}м / {t.plan}м
+                  </td>
+                </tr>
               ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+            </tbody>
+          </table>
+        </>
+      )}
 
       <h3>Активность по часам, мин</h3>
       <div style={{ width: "100%", height: 200 }}>
@@ -115,7 +151,17 @@ export default function Stats({ store }: { store: ReturnType<typeof useStore> })
       </div>
 
       <p style={{ marginTop: 20 }}>
-        <button onClick={store.reset}>Сбросить все данные</button>
+        <button
+          onClick={() =>
+            confirm("Удалить все задачи и сессии? Действие необратимо.") &&
+            store.reset()
+          }
+        >
+          🗑️ Сбросить все данные
+        </button>{" "}
+        <small>
+          старые демо-данные могли остаться в браузере — сброс их уберёт
+        </small>
       </p>
     </div>
   );
