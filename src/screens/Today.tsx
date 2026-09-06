@@ -10,6 +10,9 @@ type Props = {
   setDate: (d: string) => void;
 };
 
+// Категория скрыта в UI прототипа, но остаётся в модели ради статистики.
+const DEFAULT_CATEGORY_ID = "work";
+
 function fmt(min: number) {
   const h = Math.floor(min / 60);
   const m = Math.round(min % 60);
@@ -19,7 +22,6 @@ function fmt(min: number) {
 export default function Today({ store, timer, date, setDate }: Props) {
   const { data } = store;
   const [title, setTitle] = useState("");
-  const [cat, setCat] = useState(data.categories[0].id);
   const [planned, setPlanned] = useState(30);
 
   const tasks = useMemo(
@@ -40,7 +42,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    store.addTask(title.trim(), cat, planned, date);
+    store.addTask(title.trim(), DEFAULT_CATEGORY_ID, planned, date);
     setTitle("");
   };
 
@@ -66,7 +68,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
       <table border={1} cellPadding={6} style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead>
           <tr>
-            <th>—</th><th>Задача</th><th>Категория</th>
+            <th>—</th><th>Задача</th>
             <th>Факт / План</th><th>Таймер</th><th></th>
           </tr>
         </thead>
@@ -95,7 +97,6 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 >
                   {t.title}
                 </td>
-                <td>{data.categories.find((c) => c.id === t.categoryId)?.name}</td>
                 <td>
                   {fmt(spent)} / {fmt(t.plannedMinutes)}
                 </td>
@@ -116,7 +117,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
           })}
           {!tasks.length && (
             <tr>
-              <td colSpan={6}>
+              <td colSpan={5}>
                 <em>Пусто. Добавь задачу ниже.</em>
               </td>
             </tr>
@@ -131,11 +132,6 @@ export default function Today({ store, timer, date, setDate }: Props) {
           placeholder="Новая задача"
           style={{ width: 260 }}
         />{" "}
-        <select value={cat} onChange={(e) => setCat(e.target.value)}>
-          {data.categories.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
-          ))}
-        </select>{" "}
         <input
           type="number"
           min={5}
