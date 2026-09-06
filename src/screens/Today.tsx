@@ -417,38 +417,19 @@ export default function Today({ store, timer, date, setDate }: Props) {
                   </div>
 
                   <div className="task-tail">
-                    {/* свёрнуто: кнопка запуска; на hover — полный набор */}
-                    {!isActive && (
+                    {/* ▶ показываем, только если таймер свободен */}
+                    {!isActive && !timer.taskId && (
                       <button
-                        className="btn-icon task-run"
+                        className="btn-icon"
                         onClick={() => timer.start(t.id, data.settings.focusMinutes)}
-                        title={
-                          timer.taskId
-                            ? "Сначала останови текущий таймер"
-                            : "Запустить таймер"
-                        }
-                        disabled={timer.taskId !== null}
-                        style={{ fontSize: 15, position: "absolute", right: 0 }}
+                        title="Запустить таймер"
+                        style={{ fontSize: 15 }}
                       >
                         ▶
                       </button>
                     )}
 
                     <div className="task-actions">
-                      {!isActive && (
-                        <button
-                          className="btn-icon"
-                          onClick={() => timer.start(t.id, data.settings.focusMinutes)}
-                          title={
-                            timer.taskId
-                              ? "Сначала останови текущий таймер"
-                              : "Запустить таймер"
-                          }
-                          disabled={timer.taskId !== null}
-                        >
-                          ▶
-                        </button>
-                      )}
                       <button
                         className="btn-icon"
                         onClick={() => store.addManualTime(t.id, -15)}
