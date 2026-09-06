@@ -271,9 +271,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
         </colgroup>
         <thead>
           <tr>
-            <th style={{ width: 46 }}></th>
-            <th style={{ textAlign: "left" }}>Задача</th>
-            <th colSpan={2}></th>
+            {/* один заголовок на всю ширину таблицы */}
+            <th colSpan={4} style={{ textAlign: "center" }}>
+              Задача
+            </th>
           </tr>
         </thead>
         <tbody>
