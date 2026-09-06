@@ -29,18 +29,45 @@ npm run tauri dev    # десктоп-окно (нужен Rust)
 
 ## Сборка .exe
 
-Локально (только на Windows, нужен Rust + WebView2):
+Собрать Windows-бинарник можно **только на Windows** — нужен Windows SDK и
+WebView2. Из Linux/CI-контейнера не получится.
 
-```bash
-npm run tauri build
-# src-tauri/target/release/bundle/nsis/*.exe
+### Вариант 1: на своём ПК (проще всего)
+
+Нужны [Node.js](https://nodejs.org) и [Rust](https://rustup.rs). Дальше:
+
+```
+build-exe.bat
 ```
 
-Через CI: workflow `.github/workflows/build.yml` собирает установщик на
-windows-раннере. Вкладка Actions → Build Windows exe → артефакт
-`TrackerDayPlan-windows`.
+Двойной клик по файлу. Первая сборка 5–10 минут (компилируется Rust),
+последующие — секунды.
 
-Из Linux `.exe` собрать нельзя — нужен Windows SDK и WebView2.
+Результат:
+- установщик — `src-tauri/target/release/bundle/nsis/*.exe`
+- портативный exe — `src-tauri/target/release/Tracker DayPlan.exe`
+
+Вручную то же самое: `npm install && npm run tauri build`
+
+### Вариант 2: GitHub Actions
+
+Workflow готов, но лежит в `ci/build-windows.yml`, а не в `.github/` — у агента
+нет прав пушить workflow-файлы (GitHub блокирует это на уровне API). Включается
+одной командой:
+
+```bash
+mkdir -p .github/workflows && cp ci/build-windows.yml .github/workflows/
+git add .github && git commit -m "ci: сборка exe" && git push
+```
+
+После этого: вкладка **Actions** → **Build Windows exe** → артефакт
+`TrackerDayPlan-windows`. Сборка идёт на windows-раннере GitHub, ставить ничего
+не нужно.
+
+### При первом запуске
+
+Windows покажет синее окно SmartScreen «Защита Windows предотвратила запуск» —
+exe не подписан сертификатом. Нажми **Подробнее → Всё равно выполнить**.
 
 ## Что дальше
 
@@ -48,15 +75,4 @@ windows-раннере. Вкладка Actions → Build Windows exe → арт�
 - Трей: сворачивание в трей, таймер тикает в фоне, остаток в иконке
 - Системные уведомления Windows о конце помидорки
 - Автозапуск, глобальные горячие клавиши
-- Иконка приложения (`src-tauri/icons/icon.ico`)
 - Дизайн по мокапам из `docs/mockups/`
-
-### Активировать CI
-
-Workflow лежит в `ci/build-windows.yml` (не в `.github/`, потому что у агента
-нет прав пушить workflow-файлы). Включается одной командой:
-
-```bash
-mkdir -p .github/workflows && cp ci/build-windows.yml .github/workflows/
-git add .github && git commit -m "ci: сборка exe" && git push
-```
