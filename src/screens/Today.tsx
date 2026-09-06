@@ -313,22 +313,29 @@ export default function Today({ store, timer, date, setDate }: Props) {
           .join("   ·   ")}
       </p>
 
+      <div style={{ overflowX: "auto" }}>
       <table
         border={1}
         cellPadding={6}
-        style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}
+        style={{
+          width: "100%",
+          minWidth: 620,
+          borderCollapse: "collapse",
+          tableLayout: "fixed",
+        }}
       >
         <colgroup>
-          <col style={{ width: 46 }} />
+          <col style={{ width: 44 }} />
           <col />
-          <col style={{ width: 132 }} />
-          <col style={{ width: 96 }} />
-          <col style={{ width: 76 }} />
+          <col style={{ width: 92 }} />
+          <col style={{ width: 116 }} />
+          <col style={{ width: 44 }} />
+          <col style={{ width: 44 }} />
         </colgroup>
         <thead>
           <tr>
             {/* один заголовок на всю ширину таблицы */}
-            <th colSpan={5} style={{ textAlign: "center" }}>
+            <th colSpan={6} style={{ textAlign: "center" }}>
               Задача
             </th>
           </tr>
@@ -338,35 +345,18 @@ export default function Today({ store, timer, date, setDate }: Props) {
             const isActive = timer.taskId === t.id;
             return (
               <tr key={t.id}>
-                <td>
+                <td style={{ textAlign: "center" }}>
                   <button
                     onClick={() => store.cycleStatus(t.id)}
                     title={`${STATUS_LABEL[t.status]} — клик меняет статус`}
-                    style={{ fontSize: 18, width: 34 }}
+                    style={{ fontSize: 16 }}
                   >
                     {STATUS_EMOJI[isActive ? "active" : t.status]}
                   </button>
                 </td>
-                <td
-                  style={{
-                    textDecoration:
-                      t.status === "done" || t.status === "cancelled"
-                        ? "line-through"
-                        : "none",
-                  }}
-                >
-                  <span
-                    style={{
-                      display: "inline-block",
-                      width: 10,
-                      height: 10,
-                      borderRadius: 2,
-                      background: colorByIndex(colorIndex.get(t.id) ?? 0),
-                      marginRight: 8,
-                    }}
-                  />
+                <td style={{ overflow: "hidden" }}>
                   {editId === t.id ? (
-                    <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
@@ -375,78 +365,119 @@ export default function Today({ store, timer, date, setDate }: Props) {
                           if (e.key === "Escape") setEditId(null);
                         }}
                         autoFocus
-                        style={{ width: "55%" }}
-                      />{" "}
+                        style={{ flex: 1, minWidth: 0 }}
+                      />
                       <input
                         type="number"
                         min={5}
                         step={5}
                         value={editPlan}
                         onChange={(e) => setEditPlan(+e.target.value)}
-                        style={{ width: 60 }}
-                      />{" "}
-                      мин{" "}
-                      <button onClick={() => saveEdit(t.id)} title="Сохранить">
+                        title="Плановое время, мин"
+                        style={{ width: 58, flexShrink: 0 }}
+                      />
+                      <button onClick={() => saveEdit(t.id)} title="Сохранить" style={{ flexShrink: 0 }}>
                         💾
-                      </button>{" "}
-                      <button onClick={() => setEditId(null)} title="Отмена">
+                      </button>
+                      <button onClick={() => setEditId(null)} title="Отмена" style={{ flexShrink: 0 }}>
                         ↩️
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <span
-                      onDoubleClick={() => startEdit(t)}
-                      title="Двойной клик — переименовать"
-                      style={{ cursor: "text" }}
-                    >
-                      {t.title}{" "}
-                      <small style={{ opacity: 0.5 }}>
-                        {fmt(spentMinutes(data.sessions, t.id))} /{" "}
-                        {fmt(t.plannedMinutes)}
-                      </small>
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span
+                        style={{
+                          flexShrink: 0,
+                          width: 10,
+                          height: 10,
+                          borderRadius: 2,
+                          background: colorByIndex(colorIndex.get(t.id) ?? 0),
+                        }}
+                      />
+                      <span
+                        onDoubleClick={() => startEdit(t)}
+                        title={`${t.title} — двойной клик, чтобы переименовать`}
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          cursor: "text",
+                          textDecoration:
+                            t.status === "done" || t.status === "cancelled"
+                              ? "line-through"
+                              : "none",
+                        }}
+                      >
+                        {t.title}
+                      </span>
+                    </div>
                   )}
                 </td>
-                <td style={{ whiteSpace: "nowrap", fontSize: 12 }}>
-                  <button onClick={() => store.addManualTime(t.id, 15)} title="+15 минут">
-                    +15м
+
+                <td
+                  style={{
+                    whiteSpace: "nowrap",
+                    textAlign: "right",
+                    fontVariantNumeric: "tabular-nums",
+                    fontSize: 13,
+                  }}
+                >
+                  {fmt(spentMinutes(data.sessions, t.id))}
+                  <span style={{ opacity: 0.45 }}> / {fmt(t.plannedMinutes)}</span>
+                </td>
+
+                <td style={{ whiteSpace: "nowrap", fontSize: 12, textAlign: "center" }}>
+                  <button
+                    onClick={() => store.addManualTime(t.id, -15)}
+                    title="Списать 15 минут"
+                    style={{ width: 34 }}
+                  >
+                    −15
                   </button>{" "}
-                  <button onClick={() => store.addManualTime(t.id, -15)} title="−15 минут">
-                    −15м
+                  <button
+                    onClick={() => store.addManualTime(t.id, 15)}
+                    title="Добавить 15 минут"
+                    style={{ width: 34 }}
+                  >
+                    +15
                   </button>{" "}
-                  <button onClick={() => startEdit(t)} title="Редактировать">
+                  <button onClick={() => startEdit(t)} title="Редактировать" style={{ width: 30 }}>
                     ✏️
                   </button>
                 </td>
-                <td style={{ whiteSpace: "nowrap" }}>
+                <td style={{ textAlign: "center" }}>
                   {isActive ? (
-                    <em style={{ opacity: 0.6, fontSize: 12 }}>идёт ⏳</em>
+                    <span title="Таймер идёт">⏳</span>
                   ) : (
                     <button
                       onClick={() => timer.start(t.id, data.settings.focusMinutes)}
                       title="Запустить таймер"
                       disabled={timer.taskId !== null}
-                      style={{ width: "100%" }}
                     >
                       ▶️
                     </button>
                   )}
                 </td>
-                <td>
-                  <button onClick={() => store.removeTask(t.id)} title="Удалить">🗑️</button>
+                <td style={{ textAlign: "center" }}>
+                  <button onClick={() => store.removeTask(t.id)} title="Удалить">
+                    🗑️
+                  </button>
                 </td>
               </tr>
             );
           })}
           {!tasks.length && (
             <tr>
-              <td colSpan={5}>
+              <td colSpan={6}>
                 <em>Пусто. Добавь задачу ниже.</em>
               </td>
             </tr>
           )}
         </tbody>
       </table>
+      </div>
 
       <form onSubmit={submit} style={{ marginTop: 12 }}>
         <input
