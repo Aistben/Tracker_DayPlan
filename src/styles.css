@@ -670,3 +670,16 @@ label { cursor: pointer; user-select: none; display: inline-flex; align-items: c
 .modal-actions { display: flex; gap: 8px; justify-content: center; }
 .modal-actions .btn-primary { padding: 8px 20px; }
 .modal-hint { margin-top: 12px; font-size: 10.5px; color: var(--text-4); letter-spacing: 0.04em; }
+
+/* состояние разрешения на уведомления */
+.btn-outline.ok {
+  color: var(--st-done);
+  border-color: color-mix(in srgb, var(--st-done) 34%, transparent);
+  background: color-mix(in srgb, var(--st-done) 10%, var(--surface-2));
+  opacity: 1;
+}
+.btn-outline.ok:disabled { opacity: 1; }
+
+.notify-hint { font-size: 11px; line-height: 1.5; color: var(--text-4); }
+.notify-hint.n-granted { color: var(--st-done); }
+.notify-hint.n-denied { color: var(--st-cancelled); }

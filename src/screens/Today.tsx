@@ -57,6 +57,9 @@ export default function Today({ store, timer, date, setDate, onTestNotify }: Pro
   const [title, setTitle] = useState("");
   const [planned, setPlanned] = useState(30);
   const [showCfg, setShowCfg] = useState(false);
+  const [notifyState, setNotifyState] = useState<NotificationPermission | "unsupported">(
+    () => ("Notification" in window ? Notification.permission : "unsupported")
+  );
   const [showCal, setShowCal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
@@ -343,13 +346,34 @@ export default function Today({ store, timer, date, setDate, onTestNotify }: Pro
                 </div>
                 <div className="settings-row">
                   <button
-                    className="btn-outline btn-sm"
+                    className={`btn-outline btn-sm${
+                      notifyState === "granted" ? " ok" : ""
+                    }`}
                     style={{ flex: 1 }}
-                    onClick={() =>
-                      "Notification" in window && Notification.requestPermission()
+                    disabled={
+                      notifyState === "granted" || notifyState === "unsupported"
                     }
+                    onClick={async () => {
+                      if (!("Notification" in window)) {
+                        setNotifyState("unsupported");
+                        return;
+                      }
+                      try {
+                        const r = await Notification.requestPermission();
+                        setNotifyState(r);
+                      } catch {
+                        setNotifyState("denied");
+                      }
+                    }}
                   >
-                    <IconBell size={14} /> Разрешить
+                    <IconBell size={14} />
+                    {notifyState === "granted"
+                      ? "Разрешены"
+                      : notifyState === "denied"
+                      ? "Заблокированы"
+                      : notifyState === "unsupported"
+                      ? "Недоступны"
+                      : "Разрешить"}
                   </button>
                   <button
                     className="btn-outline btn-sm"
@@ -362,6 +386,19 @@ export default function Today({ store, timer, date, setDate, onTestNotify }: Pro
                   >
                     Проверить
                   </button>
+                </div>
+
+                <div className="settings-row">
+                  <span className={`notify-hint n-${notifyState}`}>
+                    {notifyState === "granted" &&
+                      "Уведомления придут, даже если вкладка свёрнута."}
+                    {notifyState === "default" &&
+                      "Разреши уведомления, чтобы получать сигнал из другой вкладки."}
+                    {notifyState === "denied" &&
+                      "Уведомления заблокированы в настройках браузера — разреши их в адресной строке (значок замка)."}
+                    {notifyState === "unsupported" &&
+                      "Браузер не поддерживает уведомления. Сигнал придёт звуком и миганием вкладки."}
+                  </span>
                 </div>
               </div>
             </div>

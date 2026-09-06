@@ -73,12 +73,18 @@ export default function App() {
       chime();
       try {
         if ("Notification" in window && Notification.permission === "granted") {
-          // requireInteraction — тост Windows висит, пока не закроют
-          new Notification("Помидор завершён", {
-            body: `${title} · ${minutes} мин`,
+          // requireInteraction — тост висит, пока его не закроют
+          const n = new Notification("Помидор завершён", {
+            body: `${title} · ${minutes} мин · пора отдохнуть`,
             requireInteraction: true,
             tag: "pomodoro-done",
+            silent: false,
           });
+          // клик по уведомлению возвращает пользователя во вкладку
+          n.onclick = () => {
+            window.focus();
+            n.close();
+          };
         }
       } catch {
         /* уведомления могут быть недоступны */
@@ -117,19 +123,27 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, [timer, done]);
 
-  // Пока висит уведомление — мигаем заголовком вкладки.
+  // Пока висит уведомление — мигаем заголовком и повторяем сигнал.
+  // Это работает и когда вкладка неактивна: заголовок виден на самой вкладке.
   useEffect(() => {
     if (!done) {
       document.title = "Tracker DayPlan";
       return;
     }
     let on = false;
-    const id = setInterval(() => {
+    const blink = setInterval(() => {
       on = !on;
       document.title = on ? "⏰ Помидор завершён!" : "Tracker DayPlan";
     }, 900);
+    // напоминаем звуком каждые 12 секунд, максимум 5 раз
+    let rings = 0;
+    const remind = setInterval(() => {
+      if (++rings > 5) return clearInterval(remind);
+      if (document.hidden) chime();
+    }, 12000);
     return () => {
-      clearInterval(id);
+      clearInterval(blink);
+      clearInterval(remind);
       document.title = "Tracker DayPlan";
     };
   }, [done]);
