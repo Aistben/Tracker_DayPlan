@@ -61,40 +61,22 @@ export default function Calendar({
   };
 
   return (
-    <div
-      style={{
-        border: "1px solid #ddd",
-        borderRadius: 6,
-        padding: 10,
-        width: 268,
-        background: "#fff",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 6,
-        }}
-      >
-        <button onClick={() => move(-1)} title="Предыдущий месяц">‹</button>
-        <strong style={{ fontSize: 13 }}>
+    <div className="cal">
+      <div className="cal-head">
+        <button className="btn-icon" onClick={() => move(-1)} title="Предыдущий месяц">
+          ‹
+        </button>
+        <span className="cal-title">
           {MONTHS[ym.m]} {ym.y}
-        </strong>
-        <button onClick={() => move(1)} title="Следующий месяц">›</button>
+        </span>
+        <button className="btn-icon" onClick={() => move(1)} title="Следующий месяц">
+          ›
+        </button>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
-          gap: 2,
-          fontSize: 12,
-        }}
-      >
+      <div className="cal-grid">
         {DOW.map((d) => (
-          <div key={d} style={{ textAlign: "center", opacity: 0.5, padding: 2 }}>
+          <div key={d} className="cal-dow">
             {d}
           </div>
         ))}
@@ -105,45 +87,30 @@ export default function Calendar({
           const min = minutesByDate.get(key) ?? 0;
           const selected = key === value;
           const isToday = key === today;
+          const cls = [
+            "cal-day",
+            selected ? "sel" : "",
+            isToday ? "today" : "",
+            min > 0 ? "has-work" : "",
+            taskDates.has(key) ? "has-tasks" : "",
+          ].filter(Boolean).join(" ");
           return (
             <button
               key={key}
+              className={cls}
               onClick={() => onPick(key)}
               title={min ? `${Math.round(min)} мин работы` : undefined}
-              style={{
-                padding: "4px 0",
-                cursor: "pointer",
-                border: isToday ? "1px solid #4a90d9" : "1px solid transparent",
-                borderRadius: 4,
-                background: selected ? "#4a90d9" : min ? "#e8f3e8" : "transparent",
-                color: selected ? "#fff" : "inherit",
-                fontWeight: taskDates.has(key) ? 700 : 400,
-                position: "relative",
-              }}
             >
               {d}
-              {min > 0 && (
-                <span
-                  style={{
-                    position: "absolute",
-                    bottom: 2,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 4,
-                    height: 4,
-                    borderRadius: "50%",
-                    background: selected ? "#fff" : "#4aa777",
-                  }}
-                />
-              )}
+              {min > 0 && <span className="cal-dot" />}
             </button>
           );
         })}
       </div>
 
-      <div style={{ marginTop: 8, textAlign: "center" }}>
-        <button onClick={() => onPick(today)} style={{ fontSize: 12 }}>
-          Сегодня
+      <div style={{ marginTop: 10, textAlign: "center" }}>
+        <button className="btn-sm" onClick={() => onPick(today)}>
+          Перейти к сегодня
         </button>
       </div>
     </div>

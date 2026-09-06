@@ -119,26 +119,44 @@ export default function Stats({
 
   return (
     <div>
-      {!compact && <h2>📊 Статистика</h2>}
+      <div className="stats-head">
+        <h3 className="section-title" style={{ margin: 0 }}>
+          Часы по дням
+        </h3>
+        <div className="segmented">
+          <button onClick={() => setDays(7)} disabled={days === 7}>
+            Неделя
+          </button>
+          <button onClick={() => setDays(30)} disabled={days === 30}>
+            Месяц
+          </button>
+          <button onClick={() => setDays(365)} disabled={days === 365}>
+            Год
+          </button>
+        </div>
+      </div>
 
-      <p>
-        <button onClick={() => setDays(7)} disabled={days === 7}>
-          Неделя
-        </button>{" "}
-        <button onClick={() => setDays(30)} disabled={days === 30}>
-          Месяц
-        </button>{" "}
-        <button onClick={() => setDays(365)} disabled={days === 365}>
-          Год
-        </button>
-      </p>
-
-      <p>
-        Всего <strong>{fmtH(totalMin)}</strong> · В среднем{" "}
-        <strong>{fmtH(avg)}</strong> в активный день · Активных дней{" "}
-        <strong>{activeDays}</strong>
-        {days !== 365 && <> из {days}</>}
-      </p>
+      <div className="kpis">
+        <div>
+          <div className="kpi-val">{fmtH(totalMin)}</div>
+          <div className="kpi-lab">всего</div>
+        </div>
+        <div>
+          <div className="kpi-val">{fmtH(avg)}</div>
+          <div className="kpi-lab">в активный день</div>
+        </div>
+        <div>
+          <div className="kpi-val">
+            {activeDays}
+            {days !== 365 && (
+              <span style={{ color: "var(--text-faint)", fontSize: 14 }}>
+                {" "}/ {days}
+              </span>
+            )}
+          </div>
+          <div className="kpi-lab">активных дней</div>
+        </div>
+      </div>
 
       <div style={{ width: "100%", height: compact ? 240 : 300 }}>
         <ResponsiveContainer>
@@ -152,21 +170,42 @@ export default function Stats({
               return row;
             })}
           >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="label" interval={days === 7 ? 0 : days === 30 ? 2 : 0} />
-            <YAxis unit={inHours ? "ч" : "м"} allowDecimals={inHours} />
+            <CartesianGrid strokeDasharray="2 4" stroke="var(--border)" vertical={false} />
+            <XAxis
+              dataKey="label"
+              interval={days === 7 ? 0 : days === 30 ? 2 : 0}
+              tick={{ fill: "var(--text-faint)", fontSize: 11 }}
+              axisLine={{ stroke: "var(--border)" }}
+              tickLine={false}
+            />
+            <YAxis
+              unit={inHours ? "ч" : "м"}
+              allowDecimals={inHours}
+              tick={{ fill: "var(--text-faint)", fontSize: 11 }}
+              axisLine={false}
+              tickLine={false}
+              width={38}
+            />
             {/* shared=false — тултип показывает только тот сегмент, на котором курсор */}
             <Tooltip
               shared={false}
-              cursor={{ fill: "rgba(0,0,0,0.04)" }}
+              cursor={{ fill: "rgba(125,140,170,0.09)" }}
+              wrapperClassName="tooltip"
               formatter={(v: number, name: string) => [
                 inHours ? `${v} ч` : `${v} мин`,
                 titleOf(name),
               ]}
               labelFormatter={(_, p) => p?.[0]?.payload?.date ?? ""}
             />
-            {taskKeys.map((id) => (
-              <Bar key={id} dataKey={id} stackId="day" fill={colorByIndex(colorIndex.get(id) ?? 0)} />
+            {taskKeys.map((id, i) => (
+              <Bar
+                key={id}
+                dataKey={id}
+                stackId="day"
+                fill={colorByIndex(colorIndex.get(id) ?? 0)}
+                radius={i === taskKeys.length - 1 ? [3, 3, 0, 0] : undefined}
+                animationDuration={420}
+              />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -174,43 +213,38 @@ export default function Stats({
 
       {/* Легенда: своя, чтобы показывать названия задач, а не id. */}
       {taskKeys.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginTop: 8 }}>
+        <div className="legend">
           {taskKeys.map((id) => (
-            <span key={id} style={{ display: "flex", alignItems: "center", gap: 5 }}>
-              <span
-                style={{
-                  width: 12,
-                  height: 12,
-                  background: colorByIndex(colorIndex.get(id) ?? 0),
-                  display: "inline-block",
-                  borderRadius: 2,
-                }}
+            <span key={id} className="legend-item">
+              <i
+                className="legend-swatch"
+                style={{ background: colorByIndex(colorIndex.get(id) ?? 0) }}
               />
-              <small>{titleOf(id)}</small>
+              {titleOf(id)}
             </span>
           ))}
         </div>
       )}
 
       {!totalMin && (
-        <p>
-          <em>
-            Пока пусто. Запусти таймер на задаче — часы появятся здесь, каждая
-            задача своим цветом.
-          </em>
-        </p>
+        <div className="empty" style={{ marginTop: 12 }}>
+          Пока пусто. Запусти таймер на задаче — часы появятся здесь,
+          <br />
+          каждая задача своим цветом.
+        </div>
       )}
 
-      <p style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 18, textAlign: "right" }}>
         <button
+          className="btn-ghost btn-sm muted"
           onClick={() =>
             confirm("Удалить все задачи и сессии? Действие необратимо.") &&
             store.reset()
           }
         >
-          🗑️ Сбросить все данные
+          Сбросить все данные
         </button>
-      </p>
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { STATUS_EMOJI, STATUS_LABEL, Status, colorByIndex } from "../lib/types";
-import { spentMinutes, tasksForDate, shiftISO } from "../lib/storage";
+import { spentMinutes, tasksForDate, shiftISO, todayISO } from "../lib/storage";
 import Stats from "./Stats";
 import Calendar from "./Calendar";
 import type { useStore, useTimer } from "../lib/useStore";
@@ -27,6 +27,25 @@ function fmt(min: number) {
   return h ? `${h}ч ${m}м` : `${m}м`;
 }
 
+// «пятница, 5 сентября» — читается лучше, чем 2026-09-05
+function humanDate(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  const s = d.toLocaleDateString("ru-RU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function relativeDay(iso: string) {
+  const t = todayISO();
+  if (iso === t) return "сегодня";
+  if (iso === shiftISO(t, -1)) return "вчера";
+  if (iso === shiftISO(t, 1)) return "завтра";
+  return null;
+}
+
 export default function Today({ store, timer, date, setDate }: Props) {
   const { data, colorIndex } = store;
   const [title, setTitle] = useState("");
@@ -50,7 +69,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
     return { plan, spent, counts };
   }, [tasks, data.sessions]);
 
-  const pct = totals.plan ? Math.round((totals.spent / totals.plan) * 100) : 0;
+  const pct = totals.plan
+    ? Math.min(100, Math.round((totals.spent / totals.plan) * 100))
+    : 0;
+
   const startEdit = (t: { id: string; title: string; plannedMinutes: number }) => {
     setEditId(t.id);
     setEditTitle(t.title);
@@ -69,7 +91,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
   const activeTask = data.tasks.find((t) => t.id === timer.taskId) ?? null;
   const dialColor = activeTask
     ? colorByIndex(colorIndex.get(activeTask.id) ?? 0)
-    : "#c9c9c9";
+    : "var(--text-faint)";
   // Помидоро — заполняется до конца отрезка, секундомер — по кругу за час.
   const dialFrac =
     timer.mode === "pomodoro"
@@ -85,429 +107,415 @@ export default function Today({ store, timer, date, setDate }: Props) {
     setTitle("");
   };
 
+  const R = 44;
+  const C = 2 * Math.PI * R;
+  const rel = relativeDay(date);
+  const openCount = tasks.filter(
+    (t) => t.status === "planned" || t.status === "partial"
+  ).length;
+
   return (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 20,
-          flexWrap: "wrap",
-          marginBottom: 14,
-        }}
-      >
-        {/* дата */}
-        <div>
-          <h2 style={{ margin: 0 }}>
+    <>
+      {/* ---------- Шапка: дата + таймер ---------- */}
+      <div className="card">
+        <div className="day-head">
+          <div>
             <button
+              className="date-btn"
               onClick={() => setShowCal((v) => !v)}
               title="Выбрать дату"
-              style={{ font: "inherit", cursor: "pointer", padding: "2px 8px" }}
+              aria-expanded={showCal}
             >
-              📅 {date} {showCal ? "▴" : "▾"}
+              {humanDate(date)}
+              <span className="chev">{showCal ? "▲" : "▼"}</span>
             </button>
-          </h2>
+            <div className="date-sub">
+              {rel ? `${rel} · ` : ""}
+              {tasks.length
+                ? `${tasks.length} задач · ${openCount} открыто`
+                : "задач нет"}
+            </div>
 
-          {/* выпадает так же плавно, как настройки таймера */}
-          <div
-            style={{
-              overflow: "hidden",
-              maxHeight: showCal ? 340 : 0,
-              opacity: showCal ? 1 : 0,
-              transition:
-                "max-height .25s ease, opacity .2s ease, margin-top .25s ease",
-              marginTop: showCal ? 8 : 0,
-              visibility: showCal ? "visible" : "hidden",
-            }}
-            aria-hidden={!showCal}
-          >
-            <Calendar
-              data={data}
-              value={date}
-              onPick={(d) => {
-                setDate(d);
-                setShowCal(false);
-              }}
-            />
-          </div>
-        </div>
-
-        {/* циферблат — прижат к правому краю, параллельно дате */}
-        <div style={{ marginLeft: "auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <svg width={104} height={104} viewBox="0 0 104 104">
-            <circle cx="52" cy="52" r="46" fill="none" stroke="#e3e3e3" strokeWidth="9" />
-            <circle
-              cx="52"
-              cy="52"
-              r="46"
-              fill="none"
-              stroke={activeTask ? dialColor : "#c9c9c9"}
-              strokeWidth="9"
-              strokeLinecap="round"
-              strokeDasharray={2 * Math.PI * 46}
-              strokeDashoffset={2 * Math.PI * 46 * (1 - dialFrac)}
-              transform="rotate(-90 52 52)"
-              style={{ transition: "stroke-dashoffset .3s linear" }}
-            />
-            <text
-              x="52"
-              y="52"
-              textAnchor="middle"
-              dominantBaseline="central"
-              fontFamily="monospace"
-              fontSize="21"
-              opacity={activeTask && !timer.running ? 0.45 : 1}
-            >
-              {mmss(
-                timer.mode === "pomodoro"
-                  ? Math.max(0, timer.targetSec - timer.elapsed)
-                  : timer.elapsed
-              )}
-            </text>
-          </svg>
-
-          <div>
-            {activeTask ? (
-              <>
-                <div
-                  style={{
-                    maxWidth: 210,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    fontWeight: 600,
-                  }}
-                  title={activeTask.title}
-                >
-                  {activeTask.title}
-                </div>
-                <small style={{ opacity: 0.6 }}>
-                  {timer.running ? "идёт" : "на паузе"}
-                </small>
-                <div style={{ marginTop: 6, display: "flex", gap: 4 }}>
-                  <button
-                    onClick={() => timer.setRunning(!timer.running)}
-                    title={timer.running ? "Пауза" : "Возобновить"}
-                  >
-                    {timer.running ? "⏸️" : "▶️"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      timer.stop();
-                      store.setStatus(activeTask.id, "partial");
-                    }}
-                    title="Стоп — время засчитать, задача не доделана"
-                  >
-                    ⏹️
-                  </button>
-                  <button
-                    onClick={() => {
-                      timer.complete();
-                      store.setStatus(activeTask.id, "done");
-                    }}
-                    title="Готово — засчитать время и закрыть задачу"
-                  >
-                    ✔️
-                  </button>
-                  <button onClick={() => setShowCfg((v) => !v)} title="Настройки помодоро">
-                    ⚙️
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <small style={{ opacity: 0.6 }}>Таймер не запущен</small>
-                <div style={{ marginTop: 6 }}>
-                  <button onClick={() => setShowCfg((v) => !v)} title="Настройки помодоро">
-                    ⚙️ Настройки
-                  </button>
-                </div>
-              </>
-            )}
+            <div className={`collapse${showCal ? " open" : ""}`} aria-hidden={!showCal}>
+              <Calendar
+                data={data}
+                value={date}
+                onPick={(d) => {
+                  setDate(d);
+                  setShowCal(false);
+                }}
+              />
             </div>
           </div>
 
-          {/* выезжает из блока таймера, шириной ровно по нему */}
-          <div
-            style={{
-              overflow: "hidden",
-              maxHeight: showCfg ? 200 : 0,
-              opacity: showCfg ? 1 : 0,
-              transition: "max-height .25s ease, opacity .2s ease, margin-top .25s ease",
-              marginTop: showCfg ? 8 : 0,
-              visibility: showCfg ? "visible" : "hidden",
-            }}
-            aria-hidden={!showCfg}
-          >
-            <div
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 6,
-                padding: "8px 12px",
-                fontSize: 13,
-                lineHeight: 1.9,
-              }}
-            >
-              Режим:{" "}
-              <label>
-                <input
-                  type="radio"
-                  checked={timer.mode === "pomodoro"}
-                  onChange={() => timer.setMode("pomodoro")}
-                />{" "}
-                🍅 Помидоро
-              </label>{" "}
-              <label>
-                <input
-                  type="radio"
-                  checked={timer.mode === "stopwatch"}
-                  onChange={() => timer.setMode("stopwatch")}
-                />{" "}
-                ⏱️ Секундомер
-              </label>
-              <br />
-              Фокус{" "}
-              <input
-                type="number"
-                min={1}
-                value={data.settings.focusMinutes}
-                onChange={(e) =>
-                  store.updateSettings({ focusMinutes: +e.target.value })
-                }
-                style={{ width: 52 }}
-              />{" "}
-              мин · Перерыв{" "}
-              <input
-                type="number"
-                min={1}
-                value={data.settings.shortBreakMinutes}
-                onChange={(e) =>
-                  store.updateSettings({ shortBreakMinutes: +e.target.value })
-                }
-                style={{ width: 52 }}
-              />{" "}
-              мин{" "}
-              <button
-                onClick={() =>
-                  "Notification" in window && Notification.requestPermission()
-                }
-              >
-                🔔
-              </button>
+          {/* ---------- Таймер ---------- */}
+          <div>
+            <div className="timer-box">
+              <div className="dial-wrap">
+                <svg width={102} height={102} viewBox="0 0 102 102">
+                  <circle
+                    className="dial-track"
+                    cx="51" cy="51" r={R}
+                    fill="none" strokeWidth="7"
+                  />
+                  <circle
+                    cx="51" cy="51" r={R}
+                    fill="none"
+                    stroke={dialColor}
+                    strokeWidth="7"
+                    strokeLinecap="round"
+                    strokeDasharray={C}
+                    strokeDashoffset={C * (1 - dialFrac)}
+                    transform="rotate(-90 51 51)"
+                    style={{ transition: "stroke-dashoffset .35s linear" }}
+                  />
+                  <text
+                    className={`dial-time${
+                      activeTask && !timer.running ? " paused" : ""
+                    }`}
+                    x="51" y="47"
+                    textAnchor="middle" dominantBaseline="central"
+                  >
+                    {mmss(
+                      timer.mode === "pomodoro"
+                        ? Math.max(0, timer.targetSec - timer.elapsed)
+                        : timer.elapsed
+                    )}
+                  </text>
+                  <text
+                    className="dial-label"
+                    x="51" y="64"
+                    textAnchor="middle" dominantBaseline="central"
+                  >
+                    {timer.mode === "pomodoro" ? "фокус" : "отсчёт"}
+                  </text>
+                </svg>
+              </div>
+
+              <div className="timer-info">
+                {activeTask ? (
+                  <>
+                    <div className="timer-task" title={activeTask.title}>
+                      {activeTask.title}
+                    </div>
+                    <span className="timer-state">
+                      {timer.running && <i className="pulse" />}
+                      {timer.running ? "идёт" : "на паузе"}
+                    </span>
+                    <div className="timer-actions">
+                      <button
+                        className="btn-icon"
+                        onClick={() => timer.setRunning(!timer.running)}
+                        title={timer.running ? "Пауза" : "Продолжить"}
+                      >
+                        {timer.running ? "⏸" : "▶"}
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => {
+                          timer.stop();
+                          store.setStatus(activeTask.id, "partial");
+                        }}
+                        title="Стоп — время засчитать, задача не доделана"
+                      >
+                        ⏹
+                      </button>
+                      <button
+                        className="btn-primary btn-sm"
+                        onClick={() => {
+                          timer.complete();
+                          store.setStatus(activeTask.id, "done");
+                        }}
+                        title="Готово — засчитать время и закрыть задачу"
+                      >
+                        ✓ Готово
+                      </button>
+                      <button
+                        className="btn-icon"
+                        onClick={() => setShowCfg((v) => !v)}
+                        title="Настройки таймера"
+                      >
+                        ⚙
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="muted" style={{ marginBottom: 8 }}>
+                      Таймер не запущен
+                    </div>
+                    <button
+                      className="btn-sm"
+                      onClick={() => setShowCfg((v) => !v)}
+                      title="Настройки таймера"
+                    >
+                      ⚙ Настройки
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className={`collapse${showCfg ? " open" : ""}`} aria-hidden={!showCfg}>
+              <div className="settings-panel">
+                <div className="settings-row">
+                  <label>
+                    <input
+                      type="radio"
+                      checked={timer.mode === "pomodoro"}
+                      onChange={() => timer.setMode("pomodoro")}
+                    />
+                    🍅 Помидоро
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      checked={timer.mode === "stopwatch"}
+                      onChange={() => timer.setMode("stopwatch")}
+                    />
+                    ⏱ Секундомер
+                  </label>
+                </div>
+                <div className="settings-row">
+                  <span className="muted">Фокус</span>
+                  <input
+                    type="number" min={1}
+                    value={data.settings.focusMinutes}
+                    onChange={(e) =>
+                      store.updateSettings({ focusMinutes: +e.target.value })
+                    }
+                    style={{ width: 62 }}
+                  />
+                  <span className="muted">Перерыв</span>
+                  <input
+                    type="number" min={1}
+                    value={data.settings.shortBreakMinutes}
+                    onChange={(e) =>
+                      store.updateSettings({ shortBreakMinutes: +e.target.value })
+                    }
+                    style={{ width: 62 }}
+                  />
+                  <span className="spacer" />
+                  <button
+                    className="btn-sm"
+                    onClick={() =>
+                      "Notification" in window && Notification.requestPermission()
+                    }
+                  >
+                    🔔 Уведомления
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* ---------- Прогресс дня ---------- */}
+      <div className="card">
+        <div className="progress-row">
+          <span className="progress-nums">
+            <b>{fmt(totals.spent)}</b> из {fmt(totals.plan)}
+          </span>
+          <span className="progress-nums">
+            <b>{pct}%</b>
+          </span>
+        </div>
+        <div className="bar">
+          <i style={{ width: `${pct}%` }} />
+        </div>
+        {!!tasks.length && (
+          <div className="chips">
+            {(Object.keys(STATUS_EMOJI) as Status[])
+              .filter((s) => totals.counts[s])
+              .map((s) => (
+                <span key={s} className="chip">
+                  {STATUS_EMOJI[s]} {STATUS_LABEL[s]}
+                  <b style={{ color: "var(--text)" }}>{totals.counts[s]}</b>
+                </span>
+              ))}
+          </div>
+        )}
+      </div>
 
-      <p>
-        План {fmt(totals.plan)} · Факт {fmt(totals.spent)} · {pct}%
-      </p>
-      <progress value={totals.spent} max={totals.plan || 1} style={{ width: "100%" }} />
+      {/* ---------- Задачи ---------- */}
+      <div className="card">
+        <h3 className="section-title">Задачи</h3>
 
-      <p>
-        {(Object.keys(STATUS_EMOJI) as Status[])
-          .filter((s) => totals.counts[s])
-          .map((s) => `${STATUS_EMOJI[s]} ${STATUS_LABEL[s]}: ${totals.counts[s]}`)
-          .join("   ·   ")}
-      </p>
+        {tasks.length ? (
+          <div className="tasks">
+            {tasks.map((t) => {
+              const isActive = timer.taskId === t.id;
+              const spent = spentMinutes(data.sessions, t.id);
+              const color = colorByIndex(colorIndex.get(t.id) ?? 0);
+              const cls = [
+                "task",
+                isActive ? "is-active" : "",
+                t.status === "done" ? "is-done" : "",
+                t.status === "cancelled" ? "is-cancelled" : "",
+              ].filter(Boolean).join(" ");
 
-      <div style={{ overflowX: "auto" }}>
-      <table
-        border={1}
-        cellPadding={6}
-        style={{
-          width: "100%",
-          minWidth: 620,
-          borderCollapse: "collapse",
-          tableLayout: "fixed",
-        }}
-      >
-        <colgroup>
-          <col style={{ width: 44 }} />
-          <col />
-          <col style={{ width: 92 }} />
-          <col style={{ width: 116 }} />
-          <col style={{ width: 44 }} />
-          <col style={{ width: 44 }} />
-        </colgroup>
-        <thead>
-          <tr>
-            {/* один заголовок на всю ширину таблицы */}
-            <th colSpan={6} style={{ textAlign: "center" }}>
-              Задача
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map((t) => {
-            const isActive = timer.taskId === t.id;
-            return (
-              <tr key={t.id}>
-                <td style={{ textAlign: "center" }}>
+              return (
+                <div
+                  key={t.id}
+                  className={cls}
+                  style={{ ["--task-color" as string]: color }}
+                >
                   <button
+                    className="status-btn"
                     onClick={() => store.cycleStatus(t.id)}
                     title={`${STATUS_LABEL[t.status]} — клик меняет статус`}
-                    style={{ fontSize: 16 }}
                   >
                     {STATUS_EMOJI[isActive ? "active" : t.status]}
                   </button>
-                </td>
-                <td style={{ overflow: "hidden" }}>
-                  {editId === t.id ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <input
-                        value={editTitle}
-                        onChange={(e) => setEditTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") saveEdit(t.id);
-                          if (e.key === "Escape") setEditId(null);
-                        }}
-                        autoFocus
-                        style={{ flex: 1, minWidth: 0 }}
-                      />
-                      <input
-                        type="number"
-                        min={5}
-                        step={5}
-                        value={editPlan}
-                        onChange={(e) => setEditPlan(+e.target.value)}
-                        title="Плановое время, мин"
-                        style={{ width: 58, flexShrink: 0 }}
-                      />
-                      <button onClick={() => saveEdit(t.id)} title="Сохранить" style={{ flexShrink: 0 }}>
-                        💾
-                      </button>
-                      <button onClick={() => setEditId(null)} title="Отмена" style={{ flexShrink: 0 }}>
-                        ↩️
-                      </button>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span
-                        style={{
-                          flexShrink: 0,
-                          width: 10,
-                          height: 10,
-                          borderRadius: 2,
-                          background: colorByIndex(colorIndex.get(t.id) ?? 0),
-                        }}
-                      />
-                      <span
-                        onDoubleClick={() => startEdit(t)}
-                        title={`${t.title} — двойной клик, чтобы переименовать`}
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                          cursor: "text",
-                          textDecoration:
-                            t.status === "done" || t.status === "cancelled"
-                              ? "line-through"
-                              : "none",
-                        }}
-                      >
-                        {t.title}
-                      </span>
-                    </div>
-                  )}
-                </td>
 
-                <td
-                  style={{
-                    whiteSpace: "nowrap",
-                    textAlign: "right",
-                    fontVariantNumeric: "tabular-nums",
-                    fontSize: 13,
-                  }}
-                >
-                  {fmt(spentMinutes(data.sessions, t.id))}
-                  <span style={{ opacity: 0.45 }}> / {fmt(t.plannedMinutes)}</span>
-                </td>
+                  <div className="task-main">
+                    {editId === t.id ? (
+                      <div className="task-edit">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") saveEdit(t.id);
+                            if (e.key === "Escape") setEditId(null);
+                          }}
+                          autoFocus
+                        />
+                        <input
+                          type="number" min={5} step={5}
+                          value={editPlan}
+                          onChange={(e) => setEditPlan(+e.target.value)}
+                          title="Плановое время, мин"
+                          style={{ width: 62 }}
+                        />
+                        <button className="btn-primary btn-sm" onClick={() => saveEdit(t.id)}>
+                          Сохранить
+                        </button>
+                        <button className="btn-sm" onClick={() => setEditId(null)}>
+                          Отмена
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <div
+                          className="task-title"
+                          onDoubleClick={() => startEdit(t)}
+                          title={`${t.title} — двойной клик, чтобы изменить`}
+                        >
+                          {t.title}
+                        </div>
+                        {isActive && (
+                          <div className="task-meta">выполняется сейчас</div>
+                        )}
+                      </>
+                    )}
+                  </div>
 
-                <td style={{ whiteSpace: "nowrap", fontSize: 12, textAlign: "center" }}>
-                  <button
-                    onClick={() => store.addManualTime(t.id, -15)}
-                    title="Списать 15 минут"
-                    style={{ width: 34 }}
-                  >
-                    −15
-                  </button>{" "}
-                  <button
-                    onClick={() => store.addManualTime(t.id, 15)}
-                    title="Добавить 15 минут"
-                    style={{ width: 34 }}
-                  >
-                    +15
-                  </button>{" "}
-                  <button onClick={() => startEdit(t)} title="Редактировать" style={{ width: 30 }}>
-                    ✏️
-                  </button>
-                </td>
-                <td style={{ textAlign: "center" }}>
-                  {isActive ? (
-                    <span title="Таймер идёт">⏳</span>
-                  ) : (
+                  <div className="task-time">
+                    <b>{fmt(spent)}</b> / {fmt(t.plannedMinutes)}
+                  </div>
+
+                  <div className="task-actions">
                     <button
-                      onClick={() => timer.start(t.id, data.settings.focusMinutes)}
-                      title="Запустить таймер"
-                      disabled={timer.taskId !== null}
+                      className="btn-icon"
+                      onClick={() => store.addManualTime(t.id, -15)}
+                      title="Списать 15 минут"
                     >
-                      ▶️
+                      −15
                     </button>
-                  )}
-                </td>
-                <td style={{ textAlign: "center" }}>
-                  <button onClick={() => store.removeTask(t.id)} title="Удалить">
-                    🗑️
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-          {!tasks.length && (
-            <tr>
-              <td colSpan={6}>
-                <em>Пусто. Добавь задачу ниже.</em>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                    <button
+                      className="btn-icon"
+                      onClick={() => store.addManualTime(t.id, 15)}
+                      title="Добавить 15 минут"
+                    >
+                      +15
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={() => startEdit(t)}
+                      title="Изменить"
+                    >
+                      ✎
+                    </button>
+                    <button
+                      className="btn-icon"
+                      onClick={() => store.removeTask(t.id)}
+                      title="Удалить"
+                    >
+                      🗑
+                    </button>
+                  </div>
+
+                  <div>
+                    {isActive ? (
+                      <span className="muted" title="Таймер идёт">⏳</span>
+                    ) : (
+                      <button
+                        className="btn-icon"
+                        onClick={() => timer.start(t.id, data.settings.focusMinutes)}
+                        title={
+                          timer.taskId
+                            ? "Сначала останови текущий таймер"
+                            : "Запустить таймер"
+                        }
+                        disabled={timer.taskId !== null}
+                        style={{ fontSize: 15 }}
+                      >
+                        ▶
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="empty">
+            На этот день задач нет.
+            <br />
+            Добавь первую в поле ниже.
+          </div>
+        )}
+
+        <form className="add-form" onSubmit={submit}>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Что нужно сделать?"
+          />
+          <span className="suffix">
+            <input
+              type="number" min={5} step={5}
+              value={planned}
+              onChange={(e) => setPlanned(+e.target.value)}
+              style={{ width: 68 }}
+            />
+            мин
+          </span>
+          <button className="btn-primary" type="submit">
+            Добавить
+          </button>
+        </form>
+
+        {openCount > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <button
+              className="btn-sm"
+              onClick={() => store.carryOver(date, shiftISO(date, 1))}
+              title="Незакрытые задачи переедут на следующий день"
+            >
+              🌙 Закрыть день — перенести {openCount} на завтра
+            </button>
+          </div>
+        )}
       </div>
 
-      <form onSubmit={submit} style={{ marginTop: 12 }}>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Новая задача"
-          style={{ width: 260 }}
-        />{" "}
-        <input
-          type="number"
-          min={5}
-          step={5}
-          value={planned}
-          onChange={(e) => setPlanned(+e.target.value)}
-          style={{ width: 70 }}
-        />{" "}
-        мин <button type="submit">➕ Добавить</button>
-      </form>
-
-      <p style={{ marginTop: 16 }}>
-        <button onClick={() => store.carryOver(date, shiftISO(date, 1))}>
-          🌙 Закрыть день — перенести незакрытое на завтра
-        </button>
-      </p>
-
-      <hr style={{ margin: "24px 0" }} />
-      <h3 style={{ marginTop: 0 }}>📊 Часы по дням</h3>
-      <Stats store={store} compact />
-
-
-    </div>
+      {/* ---------- Статистика ---------- */}
+      <div className="card">
+        <Stats store={store} compact />
+      </div>
+    </>
   );
 }

@@ -1,0 +1,496 @@
+/* ============================================================
+   Дизайн-токены. Тёмная тема — по умолчанию, светлая — по классу.
+   ============================================================ */
+:root {
+  --bg: #14161b;
+  --surface: #1a1d24;
+  --surface-2: #21252e;
+  --surface-3: #2a2f3a;
+  --border: #2e3440;
+  --border-strong: #3d4452;
+
+  --text: #e6e9ef;
+  --text-dim: #9aa3b2;
+  --text-faint: #6b7383;
+
+  --accent: #4aa777;
+  --accent-hover: #55bb87;
+  --accent-soft: rgba(74, 167, 119, 0.14);
+  --amber: #d99a4a;
+  --amber-soft: rgba(217, 154, 74, 0.14);
+  --blue: #4a90d9;
+  --danger: #d9534a;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+  --ease: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root.light {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #f0f2f6;
+  --surface-3: #e5e9f0;
+  --border: #dfe3ea;
+  --border-strong: #c8cfda;
+
+  --text: #1c2028;
+  --text-dim: #5d6672;
+  --text-faint: #8b939f;
+
+  --accent: #2f9160;
+  --accent-hover: #268053;
+  --accent-soft: rgba(47, 145, 96, 0.12);
+  --amber: #b4762a;
+  --amber-soft: rgba(180, 118, 42, 0.12);
+  --blue: #2f74c0;
+  --danger: #c4443b;
+
+  --shadow: 0 4px 14px rgba(20, 30, 50, 0.08);
+  --shadow-lg: 0 12px 28px rgba(20, 30, 50, 0.14);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  transition: background var(--ease), color var(--ease);
+}
+
+/* ---------- Каркас ---------- */
+.app {
+  max-width: 940px;
+  margin: 0 auto;
+  padding: 28px 20px 80px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.brand small {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+  margin: 0 0 14px;
+}
+
+/* ---------- Кнопки ---------- */
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: background var(--ease), border-color var(--ease),
+    transform 0.1s ease, opacity var(--ease);
+  line-height: 1.35;
+}
+button:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: 0.42; cursor: not-allowed; }
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 550;
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-ghost { background: transparent; border-color: transparent; }
+.btn-ghost:hover:not(:disabled) { background: var(--surface-2); }
+
+.btn-icon {
+  padding: 5px 8px;
+  background: transparent;
+  border-color: transparent;
+  font-size: 14px;
+  line-height: 1;
+}
+.btn-icon:hover:not(:disabled) { background: var(--surface-3); }
+
+.btn-sm { padding: 3px 8px; font-size: 12px; }
+
+/* сегментированный переключатель периода */
+.segmented { display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); }
+.segmented button {
+  background: transparent; border-color: transparent;
+  padding: 4px 14px; font-size: 13px; color: var(--text-dim);
+}
+.segmented button:hover:not(:disabled) { background: transparent; color: var(--text); }
+.segmented button:disabled {
+  background: var(--surface); color: var(--text);
+  opacity: 1; font-weight: 550;
+  box-shadow: 0 1px 3px rgba(0,0,0,.18);
+}
+
+/* ---------- Поля ввода ---------- */
+input[type="text"], input[type="number"], input:not([type]) {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+input::placeholder { color: var(--text-faint); }
+input[type="radio"] { accent-color: var(--accent); margin-right: 4px; }
+label { cursor: pointer; user-select: none; }
+
+/* ---------- Шапка дня ---------- */
+.day-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.date-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  padding: 7px 13px;
+  background: transparent;
+  border-color: transparent;
+}
+.date-btn:hover:not(:disabled) { background: var(--surface-2); }
+.date-btn .chev { font-size: 10px; color: var(--text-faint); }
+.date-sub { color: var(--text-faint); font-size: 12px; padding-left: 14px; }
+
+/* ---------- Плавное раскрытие ---------- */
+.collapse {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: max-height var(--ease), opacity 0.18s ease,
+    margin-top var(--ease), visibility var(--ease);
+}
+.collapse.open {
+  opacity: 1;
+  visibility: visible;
+  margin-top: 10px;
+}
+
+/* ---------- Таймер ---------- */
+.timer-box { display: flex; align-items: center; gap: 16px; }
+.dial-wrap { position: relative; flex-shrink: 0; }
+.dial-track { stroke: var(--surface-3); }
+.dial-time {
+  fill: var(--text);
+  font-family: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, monospace;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.dial-time.paused { opacity: 0.4; }
+.dial-label {
+  fill: var(--text-faint);
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.timer-info { min-width: 168px; }
+.timer-task {
+  font-weight: 600;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 2px;
+}
+.timer-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.82); }
+}
+.timer-actions { display: flex; gap: 5px; margin-top: 9px; }
+
+/* ---------- Прогресс дня ---------- */
+.progress-row {
+  display: flex; align-items: baseline;
+  justify-content: space-between; gap: 12px; margin-bottom: 7px;
+}
+.progress-nums { font-size: 13px; color: var(--text-dim); }
+.progress-nums b { color: var(--text); font-size: 15px; font-weight: 650; }
+.bar {
+  height: 7px; background: var(--surface-3);
+  border-radius: 4px; overflow: hidden;
+}
+.bar > i {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 4px;
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; font-size: 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--text-dim);
+}
+
+/* ---------- Список задач ---------- */
+.tasks { display: flex; flex-direction: column; gap: 7px; }
+
+.task {
+  display: grid;
+  grid-template-columns: 34px 1fr auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--task-color, var(--border));
+  border-radius: var(--radius-sm);
+  transition: border-color var(--ease), background var(--ease),
+    transform 0.12s ease;
+}
+.task:hover { background: var(--surface-3); }
+.task.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.task.is-done { opacity: 0.55; }
+.task.is-done .task-title { text-decoration: line-through; }
+.task.is-cancelled { opacity: 0.42; }
+.task.is-cancelled .task-title { text-decoration: line-through; }
+
+.status-btn {
+  background: transparent; border-color: transparent;
+  font-size: 17px; padding: 3px; line-height: 1;
+  border-radius: 50%;
+}
+.status-btn:hover:not(:disabled) { background: var(--surface); }
+
+.task-main { min-width: 0; }
+.task-title {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  cursor: text; font-weight: 500;
+}
+.task-meta {
+  font-size: 11.5px; color: var(--text-faint);
+  font-variant-numeric: tabular-nums; margin-top: 1px;
+}
+
+.task-time {
+  font-size: 13px; font-variant-numeric: tabular-nums;
+  white-space: nowrap; color: var(--text-dim); text-align: right;
+}
+.task-time b { color: var(--text); font-weight: 600; }
+
+/* действия появляются на hover, но остаются доступны с клавиатуры */
+.task-actions { display: flex; gap: 3px; opacity: 0; transition: opacity var(--ease); }
+.task:hover .task-actions,
+.task:focus-within .task-actions { opacity: 1; }
+@media (hover: none) { .task-actions { opacity: 1; } }
+
+.task-edit { display: flex; gap: 7px; align-items: center; }
+.task-edit input[type="text"] { flex: 1; min-width: 0; }
+
+.empty {
+  text-align: center; padding: 34px 18px;
+  color: var(--text-faint); font-size: 13px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+/* ---------- Форма добавления ---------- */
+.add-form { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+.add-form input[type="text"] { flex: 1; min-width: 180px; }
+.suffix {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--text-dim); font-size: 13px;
+}
+
+/* ---------- Календарь ---------- */
+.cal {
+  width: 268px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+}
+.cal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 9px;
+}
+.cal-title { font-size: 13px; font-weight: 600; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-dow {
+  text-align: center; font-size: 10.5px; padding: 3px 0;
+  color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.cal-day {
+  position: relative; padding: 6px 0; font-size: 12.5px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--radius-sm); color: var(--text-dim);
+}
+.cal-day:hover:not(:disabled) { background: var(--surface-3); color: var(--text); }
+.cal-day.has-tasks { color: var(--text); font-weight: 600; }
+.cal-day.has-work { background: var(--accent-soft); color: var(--text); }
+.cal-day.today { border-color: var(--blue); }
+.cal-day.sel {
+  background: var(--accent) !important; color: #fff !important;
+  border-color: var(--accent);
+}
+.cal-dot {
+  position: absolute; bottom: 3px; left: 50%;
+  transform: translateX(-50%);
+  width: 3.5px; height: 3.5px; border-radius: 50%;
+  background: var(--accent);
+}
+.cal-day.sel .cal-dot { background: #fff; }
+
+/* ---------- Статистика ---------- */
+.stats-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.kpis { display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 6px; }
+.kpi-val {
+  font-size: 21px; font-weight: 650; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.kpi-lab {
+  font-size: 11px; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 7px 14px; margin-top: 12px; }
+.legend-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-dim);
+}
+.legend-swatch { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+.tooltip {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: var(--radius-sm) !important;
+  box-shadow: var(--shadow-lg);
+  font-size: 12.5px;
+  padding: 8px 11px !important;
+}
+
+/* ---------- Разное ---------- */
+.row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.spacer { flex: 1; }
+.muted { color: var(--text-faint); font-size: 12px; }
+.settings-panel {
+  padding: 13px 15px; font-size: 13px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.settings-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.settings-row + .settings-row {
+  margin-top: 11px; padding-top: 11px; border-top: 1px solid var(--border);
+}
+
+.toast {
+  position: fixed; bottom: 22px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius); box-shadow: var(--shadow-lg);
+  padding: 11px 18px; font-size: 13.5px;
+  display: flex; align-items: center; gap: 10px;
+  animation: rise 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 50;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translate(-50%, 14px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (max-width: 640px) {
+  .app { padding: 18px 13px 60px; }
+  .task { grid-template-columns: 30px 1fr auto; row-gap: 8px; }
+  .task-time { grid-column: 2 / -1; text-align: left; }
+  .timer-box { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
