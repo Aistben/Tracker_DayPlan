@@ -29,13 +29,13 @@ export default function App() {
 
       <nav style={{ margin: "12px 0", display: "flex", gap: 8 }}>
         <button onClick={() => setTab("today")} disabled={tab === "today"}>
-          Сегодня
+          📅 Сегодня
         </button>
         <button onClick={() => setTab("timer")} disabled={tab === "timer"}>
-          Таймер {timer.running ? "●" : ""}
+          ⏱️ Таймер {timer.running ? "🔴" : ""}
         </button>
         <button onClick={() => setTab("stats")} disabled={tab === "stats"}>
-          Статистика
+          📊 Статистика
         </button>
       </nav>
       <hr />

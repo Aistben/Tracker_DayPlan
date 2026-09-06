@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { STATUS_LABEL, STATUS_MARKER, Status } from "../lib/types";
+import { STATUS_LABEL, Status } from "../lib/types";
 import { spentMinutes, tasksForDate, shiftISO } from "../lib/storage";
 import type { useStore, useTimer } from "../lib/useStore";
 
@@ -12,6 +12,22 @@ type Props = {
 
 // Категория скрыта в UI прототипа, но остаётся в модели ради статистики.
 const DEFAULT_CATEGORY_ID = "work";
+
+// Эмодзи для статусов — понятнее символов ○◐●.
+const STATUS_EMOJI: Record<Status, string> = {
+  planned: "⬜",
+  active: "⏳",
+  done: "✅",
+  partial: "🟨",
+  cancelled: "❌",
+  moved: "➡️",
+};
+
+function mmss(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 function fmt(min: number) {
   const h = Math.floor(min / 60);
@@ -49,8 +65,8 @@ export default function Today({ store, timer, date, setDate }: Props) {
   return (
     <div>
       <h2>
-        <button onClick={() => setDate(shiftISO(date, -1))}>←</button> {date}{" "}
-        <button onClick={() => setDate(shiftISO(date, 1))}>→</button>
+        <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">⬅️</button> {date}{" "}
+        <button onClick={() => setDate(shiftISO(date, 1))} title="Следующий день">➡️</button>
       </h2>
 
       <p>
@@ -59,10 +75,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
       <progress value={totals.spent} max={totals.plan || 1} style={{ width: "100%" }} />
 
       <p>
-        {(Object.keys(STATUS_MARKER) as Status[])
+        {(Object.keys(STATUS_EMOJI) as Status[])
           .filter((s) => totals.counts[s])
-          .map((s) => `${STATUS_MARKER[s]} ${totals.counts[s]}`)
-          .join("   ")}
+          .map((s) => `${STATUS_EMOJI[s]} ${STATUS_LABEL[s]}: ${totals.counts[s]}`)
+          .join("   ·   ")}
       </p>
 
       <table border={1} cellPadding={6} style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -81,10 +97,10 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 <td>
                   <button
                     onClick={() => store.cycleStatus(t.id)}
-                    title={STATUS_LABEL[t.status]}
+                    title={`${STATUS_LABEL[t.status]} — клик меняет статус`}
                     style={{ fontSize: 18, width: 34 }}
                   >
-                    {STATUS_MARKER[isActive ? "active" : t.status]}
+                    {STATUS_EMOJI[isActive ? "active" : t.status]}
                   </button>
                 </td>
                 <td
@@ -100,17 +116,47 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 <td>
                   {fmt(spent)} / {fmt(t.plannedMinutes)}
                 </td>
-                <td>
+                <td style={{ whiteSpace: "nowrap" }}>
                   {isActive ? (
-                    <em>идёт…</em>
+                    <>
+                      <strong
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: 16,
+                          opacity: timer.running ? 1 : 0.5,
+                        }}
+                      >
+                        {mmss(
+                          timer.mode === "pomodoro"
+                            ? Math.max(0, timer.targetSec - timer.elapsed)
+                            : timer.elapsed
+                        )}
+                      </strong>{" "}
+                      <button
+                        onClick={() => timer.setRunning(!timer.running)}
+                        title={timer.running ? "Пауза" : "Возобновить"}
+                      >
+                        {timer.running ? "⏸️" : "▶️"}
+                      </button>{" "}
+                      <button onClick={timer.stop} title="Стоп — записать как прерванную">
+                        ⏹️
+                      </button>{" "}
+                      <button onClick={timer.complete} title="Готово — засчитать сессию">
+                        ✔️
+                      </button>
+                    </>
                   ) : (
-                    <button onClick={() => timer.start(t.id, data.settings.focusMinutes)}>
-                      ▶ старт
+                    <button
+                      onClick={() => timer.start(t.id, data.settings.focusMinutes)}
+                      title="Запустить таймер"
+                      disabled={timer.taskId !== null}
+                    >
+                      ▶️ старт
                     </button>
                   )}
                 </td>
                 <td>
-                  <button onClick={() => store.removeTask(t.id)}>✕</button>
+                  <button onClick={() => store.removeTask(t.id)} title="Удалить">🗑️</button>
                 </td>
               </tr>
             );
@@ -140,12 +186,12 @@ export default function Today({ store, timer, date, setDate }: Props) {
           onChange={(e) => setPlanned(+e.target.value)}
           style={{ width: 70 }}
         />{" "}
-        мин <button type="submit">Добавить</button>
+        мин <button type="submit">➕ Добавить</button>
       </form>
 
       <p style={{ marginTop: 16 }}>
         <button onClick={() => store.carryOver(date, shiftISO(date, 1))}>
-          Закрыть день → перенести незакрытое на завтра
+          🌙 Закрыть день — перенести незакрытое на завтра
         </button>
       </p>
     </div>
