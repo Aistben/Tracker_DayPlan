@@ -90,14 +90,8 @@ export default function Today({ store, timer, date, setDate }: Props) {
         </div>
 
         {/* циферблат — прижат к правому краю, параллельно дате */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            marginLeft: "auto",
-          }}
-        >
+        <div style={{ marginLeft: "auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <svg width={104} height={104} viewBox="0 0 104 104">
             <circle cx="52" cy="52" r="46" fill="none" stroke="#e3e3e3" strokeWidth="9" />
             <circle
@@ -188,63 +182,81 @@ export default function Today({ store, timer, date, setDate }: Props) {
                 </div>
               </>
             )}
+            </div>
+          </div>
+
+          {/* выезжает из блока таймера, шириной ровно по нему */}
+          <div
+            style={{
+              overflow: "hidden",
+              maxHeight: showCfg ? 200 : 0,
+              opacity: showCfg ? 1 : 0,
+              transition: "max-height .25s ease, opacity .2s ease, margin-top .25s ease",
+              marginTop: showCfg ? 8 : 0,
+              visibility: showCfg ? "visible" : "hidden",
+            }}
+            aria-hidden={!showCfg}
+          >
+            <div
+              style={{
+                border: "1px solid #ddd",
+                borderRadius: 6,
+                padding: "8px 12px",
+                fontSize: 13,
+                lineHeight: 1.9,
+              }}
+            >
+              Режим:{" "}
+              <label>
+                <input
+                  type="radio"
+                  checked={timer.mode === "pomodoro"}
+                  onChange={() => timer.setMode("pomodoro")}
+                />{" "}
+                🍅 Помидоро
+              </label>{" "}
+              <label>
+                <input
+                  type="radio"
+                  checked={timer.mode === "stopwatch"}
+                  onChange={() => timer.setMode("stopwatch")}
+                />{" "}
+                ⏱️ Секундомер
+              </label>
+              <br />
+              Фокус{" "}
+              <input
+                type="number"
+                min={1}
+                value={data.settings.focusMinutes}
+                onChange={(e) =>
+                  store.updateSettings({ focusMinutes: +e.target.value })
+                }
+                style={{ width: 52 }}
+              />{" "}
+              мин · Перерыв{" "}
+              <input
+                type="number"
+                min={1}
+                value={data.settings.shortBreakMinutes}
+                onChange={(e) =>
+                  store.updateSettings({ shortBreakMinutes: +e.target.value })
+                }
+                style={{ width: 52 }}
+              />{" "}
+              мин{" "}
+              <button
+                onClick={() =>
+                  "Notification" in window && Notification.requestPermission()
+                }
+              >
+                🔔
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {showCfg && (
-        <p
-          style={{
-            border: "1px solid #ddd",
-            borderRadius: 6,
-            padding: "8px 12px",
-            fontSize: 13,
-          }}
-        >
-          Режим:{" "}
-          <label>
-            <input
-              type="radio"
-              checked={timer.mode === "pomodoro"}
-              onChange={() => timer.setMode("pomodoro")}
-            />{" "}
-            🍅 Помидоро
-          </label>{" "}
-          <label>
-            <input
-              type="radio"
-              checked={timer.mode === "stopwatch"}
-              onChange={() => timer.setMode("stopwatch")}
-            />{" "}
-            ⏱️ Секундомер
-          </label>
-          <br />
-          🍅 Фокус{" "}
-          <input
-            type="number"
-            min={1}
-            value={data.settings.focusMinutes}
-            onChange={(e) => store.updateSettings({ focusMinutes: +e.target.value })}
-            style={{ width: 56 }}
-          />{" "}
-          мин · Перерыв{" "}
-          <input
-            type="number"
-            min={1}
-            value={data.settings.shortBreakMinutes}
-            onChange={(e) =>
-              store.updateSettings({ shortBreakMinutes: +e.target.value })
-            }
-            style={{ width: 56 }}
-          />{" "}
-          мин{" "}
-          <button
-            onClick={() => "Notification" in window && Notification.requestPermission()}
-          >
-            🔔 Уведомления
-          </button>
-        </p>
-      )}
 
       <p>
         План {fmt(totals.plan)} · Факт {fmt(totals.spent)} · {pct}%
