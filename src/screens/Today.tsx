@@ -155,7 +155,13 @@ export default function Today({ store, timer, date, setDate }: Props) {
                   >
                     {timer.running ? "⏸️" : "▶️"}
                   </button>
-                  <button onClick={timer.stop} title="Стоп — записать как прерванную">
+                  <button
+                    onClick={() => {
+                      timer.stop();
+                      store.setStatus(activeTask.id, "partial");
+                    }}
+                    title="Стоп — время засчитать, задача не доделана"
+                  >
                     ⏹️
                   </button>
                   <button
@@ -265,7 +271,9 @@ export default function Today({ store, timer, date, setDate }: Props) {
         </colgroup>
         <thead>
           <tr>
-            <th>—</th><th>Задача</th><th></th><th></th>
+            <th style={{ width: 46 }}></th>
+            <th style={{ textAlign: "left" }}>Задача</th>
+            <th colSpan={2}></th>
           </tr>
         </thead>
         <tbody>
