@@ -108,8 +108,8 @@ export const TASK_COLORS = [
   "#d94a6b", "#43b0a3", "#c9a227", "#6b7fd6",
 ];
 
-export function taskColor(id: string): string {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return TASK_COLORS[h % TASK_COLORS.length];
+// Цвет по порядковому номеру задачи — соседние задачи всегда разного цвета.
+// Хеш от id не годился: при 8 цветах совпадения появлялись уже на 4-5 задачах.
+export function colorByIndex(i: number): string {
+  return TASK_COLORS[i % TASK_COLORS.length];
 }

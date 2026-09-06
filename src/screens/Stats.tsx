@@ -3,7 +3,7 @@ import {
   Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { shiftISO, todayISO } from "../lib/storage";
-import { taskColor } from "../lib/types";
+import { colorByIndex } from "../lib/types";
 import type { useStore } from "../lib/useStore";
 
 type Period = 7 | 30;
@@ -21,7 +21,7 @@ export default function Stats({
   store: ReturnType<typeof useStore>;
   compact?: boolean;
 }) {
-  const { data } = store;
+  const { data, colorIndex } = store;
   const [days, setDays] = useState<Period>(7);
 
   // Столбик на день, внутри — сегмент на каждую задачу.
@@ -134,7 +134,7 @@ export default function Stats({
               labelFormatter={(_, p) => p?.[0]?.payload?.date ?? ""}
             />
             {taskKeys.map((id) => (
-              <Bar key={id} dataKey={id} stackId="day" fill={taskColor(id)} />
+              <Bar key={id} dataKey={id} stackId="day" fill={colorByIndex(colorIndex.get(id) ?? 0)} />
             ))}
           </BarChart>
         </ResponsiveContainer>
@@ -149,7 +149,7 @@ export default function Stats({
                 style={{
                   width: 12,
                   height: 12,
-                  background: taskColor(id),
+                  background: colorByIndex(colorIndex.get(id) ?? 0),
                   display: "inline-block",
                   borderRadius: 2,
                 }}

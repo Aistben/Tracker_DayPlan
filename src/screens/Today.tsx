@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { STATUS_EMOJI, STATUS_LABEL, Status, taskColor } from "../lib/types";
+import { STATUS_EMOJI, STATUS_LABEL, Status, colorByIndex } from "../lib/types";
 import { spentMinutes, tasksForDate, shiftISO } from "../lib/storage";
 import Stats from "./Stats";
 import type { useStore, useTimer } from "../lib/useStore";
@@ -27,9 +27,10 @@ function fmt(min: number) {
 }
 
 export default function Today({ store, timer, date, setDate }: Props) {
-  const { data } = store;
+  const { data, colorIndex } = store;
   const [title, setTitle] = useState("");
   const [planned, setPlanned] = useState(30);
+  const [showCfg, setShowCfg] = useState(false);
 
   const tasks = useMemo(
     () => tasksForDate(data.tasks, date).filter((t) => t.status !== "moved"),
@@ -46,6 +47,16 @@ export default function Today({ store, timer, date, setDate }: Props) {
 
   const pct = totals.plan ? Math.round((totals.spent / totals.plan) * 100) : 0;
   const activeTask = data.tasks.find((t) => t.id === timer.taskId) ?? null;
+  const dialColor = activeTask
+    ? colorByIndex(colorIndex.get(activeTask.id) ?? 0)
+    : "#c9c9c9";
+  // Помидоро — заполняется до конца отрезка, секундомер — по кругу за час.
+  const dialFrac =
+    timer.mode === "pomodoro"
+      ? timer.targetSec
+        ? Math.min(1, timer.elapsed / timer.targetSec)
+        : 0
+      : (timer.elapsed % 3600) / 3600;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,125 +71,167 @@ export default function Today({ store, timer, date, setDate }: Props) {
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
+          gap: 20,
           flexWrap: "wrap",
+          marginBottom: 14,
         }}
       >
-        <h2 style={{ margin: 0 }}>
-          <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">
-            ⬅️
-          </button>{" "}
-          {date}{" "}
-          <button onClick={() => setDate(shiftISO(date, 1))} title="Следующий день">
-            ➡️
-          </button>
-        </h2>
+        {/* дата + секундомер под ней */}
+        <div>
+          <h2 style={{ margin: 0 }}>
+            <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">
+              ⬅️
+            </button>{" "}
+            {date}{" "}
+            <button onClick={() => setDate(shiftISO(date, 1))} title="Следующий день">
+              ➡️
+            </button>
+          </h2>
+          <div style={{ marginTop: 6, fontSize: 13 }}>
+            <label title="Свободный отсчёт без лимита">
+              <input
+                type="radio"
+                checked={timer.mode === "stopwatch"}
+                onChange={() => timer.setMode("stopwatch")}
+              />{" "}
+              ⏱️ Секундомер
+            </label>{" "}
+            <label title="Фиксированный отрезок фокуса">
+              <input
+                type="radio"
+                checked={timer.mode === "pomodoro"}
+                onChange={() => timer.setMode("pomodoro")}
+              />{" "}
+              🍅 Помидоро
+            </label>
+          </div>
+        </div>
 
-        {/* Таймер активной задачи — всегда на виду */}
-        <div
-          style={{
-            border: "1px solid #ccc",
-            borderRadius: 6,
-            padding: "6px 12px",
-            minWidth: 300,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-          }}
-        >
-          {activeTask ? (
-            <>
-              <span
-                style={{
-                  fontFamily: "monospace",
-                  fontSize: 26,
-                  width: 78,
-                  opacity: timer.running ? 1 : 0.45,
-                }}
-              >
-                {mmss(
-                  timer.mode === "pomodoro"
-                    ? Math.max(0, timer.targetSec - timer.elapsed)
-                    : timer.elapsed
-                )}
-              </span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <small
+        {/* циферблат */}
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <svg width={104} height={104} viewBox="0 0 104 104">
+            <circle cx="52" cy="52" r="46" fill="none" stroke="#e3e3e3" strokeWidth="9" />
+            <circle
+              cx="52"
+              cy="52"
+              r="46"
+              fill="none"
+              stroke={activeTask ? dialColor : "#c9c9c9"}
+              strokeWidth="9"
+              strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 46}
+              strokeDashoffset={2 * Math.PI * 46 * (1 - dialFrac)}
+              transform="rotate(-90 52 52)"
+              style={{ transition: "stroke-dashoffset .3s linear" }}
+            />
+            <text
+              x="52"
+              y="52"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontFamily="monospace"
+              fontSize="21"
+              opacity={activeTask && !timer.running ? 0.45 : 1}
+            >
+              {mmss(
+                timer.mode === "pomodoro"
+                  ? Math.max(0, timer.targetSec - timer.elapsed)
+                  : timer.elapsed
+              )}
+            </text>
+          </svg>
+
+          <div>
+            {activeTask ? (
+              <>
+                <div
                   style={{
-                    display: "block",
+                    maxWidth: 210,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
+                    fontWeight: 600,
                   }}
                   title={activeTask.title}
                 >
                   {activeTask.title}
-                </small>
+                </div>
                 <small style={{ opacity: 0.6 }}>
                   {timer.running ? "идёт" : "на паузе"}
                 </small>
-              </span>
-              <button
-                onClick={() => timer.setRunning(!timer.running)}
-                title={timer.running ? "Пауза" : "Возобновить"}
-              >
-                {timer.running ? "⏸️" : "▶️"}
-              </button>
-              <button onClick={timer.stop} title="Стоп — записать как прерванную">
-                ⏹️
-              </button>
-              <button
-                onClick={() => {
-                  timer.complete();
-                  store.setStatus(activeTask.id, "done");
-                }}
-                title="Готово — засчитать время и закрыть задачу"
-              >
-                ✔️
-              </button>
-            </>
-          ) : (
-            <small style={{ opacity: 0.6, flex: 1 }}>
-              ⏱️ Таймер не запущен — нажми ▶️ у задачи
-            </small>
-          )}
+                <div style={{ marginTop: 6, display: "flex", gap: 4 }}>
+                  <button
+                    onClick={() => timer.setRunning(!timer.running)}
+                    title={timer.running ? "Пауза" : "Возобновить"}
+                  >
+                    {timer.running ? "⏸️" : "▶️"}
+                  </button>
+                  <button onClick={timer.stop} title="Стоп — записать как прерванную">
+                    ⏹️
+                  </button>
+                  <button
+                    onClick={() => {
+                      timer.complete();
+                      store.setStatus(activeTask.id, "done");
+                    }}
+                    title="Готово — засчитать время и закрыть задачу"
+                  >
+                    ✔️
+                  </button>
+                  <button onClick={() => setShowCfg((v) => !v)} title="Настройки помодоро">
+                    ⚙️
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <small style={{ opacity: 0.6 }}>Таймер не запущен</small>
+                <div style={{ marginTop: 6 }}>
+                  <button onClick={() => setShowCfg((v) => !v)} title="Настройки помодоро">
+                    ⚙️ Настройки
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      <p style={{ margin: "6px 0 12px", fontSize: 13, opacity: 0.85 }}>
-        <label>
-          <input
-            type="radio"
-            checked={timer.mode === "pomodoro"}
-            onChange={() => timer.setMode("pomodoro")}
-          />{" "}
-          🍅 Помидоро
-        </label>{" "}
-        <input
-          type="number"
-          min={1}
-          value={data.settings.focusMinutes}
-          onChange={(e) => store.updateSettings({ focusMinutes: +e.target.value })}
-          style={{ width: 52 }}
-          disabled={timer.mode !== "pomodoro"}
-        />{" "}
-        мин {" · "}
-        <label>
-          <input
-            type="radio"
-            checked={timer.mode === "stopwatch"}
-            onChange={() => timer.setMode("stopwatch")}
-          />{" "}
-          ⏱️ Секундомер
-        </label>{" "}
-        <button
-          onClick={() => "Notification" in window && Notification.requestPermission()}
-          title="Уведомление в конце помидорки"
+      {showCfg && (
+        <p
+          style={{
+            border: "1px solid #ddd",
+            borderRadius: 6,
+            padding: "8px 12px",
+            fontSize: 13,
+          }}
         >
-          🔔
-        </button>
-      </p>
+          🍅 Фокус{" "}
+          <input
+            type="number"
+            min={1}
+            value={data.settings.focusMinutes}
+            onChange={(e) => store.updateSettings({ focusMinutes: +e.target.value })}
+            style={{ width: 56 }}
+          />{" "}
+          мин · Перерыв{" "}
+          <input
+            type="number"
+            min={1}
+            value={data.settings.shortBreakMinutes}
+            onChange={(e) =>
+              store.updateSettings({ shortBreakMinutes: +e.target.value })
+            }
+            style={{ width: 56 }}
+          />{" "}
+          мин{" "}
+          <button
+            onClick={() => "Notification" in window && Notification.requestPermission()}
+          >
+            🔔 Уведомления
+          </button>
+        </p>
+      )}
 
       <p>
         План {fmt(totals.plan)} · Факт {fmt(totals.spent)} · {pct}%
@@ -200,19 +253,16 @@ export default function Today({ store, timer, date, setDate }: Props) {
         <colgroup>
           <col style={{ width: 46 }} />
           <col />
-          <col style={{ width: 130 }} />
-          <col style={{ width: 210 }} />
+          <col style={{ width: 96 }} />
           <col style={{ width: 46 }} />
         </colgroup>
         <thead>
           <tr>
-            <th>—</th><th>Задача</th>
-            <th>Факт / План</th><th>Таймер</th><th></th>
+            <th>—</th><th>Задача</th><th></th><th></th>
           </tr>
         </thead>
         <tbody>
           {tasks.map((t) => {
-            const spent = spentMinutes(data.sessions, t.id);
             const isActive = timer.taskId === t.id;
             return (
               <tr key={t.id}>
@@ -239,18 +289,15 @@ export default function Today({ store, timer, date, setDate }: Props) {
                       width: 10,
                       height: 10,
                       borderRadius: 2,
-                      background: taskColor(t.id),
+                      background: colorByIndex(colorIndex.get(t.id) ?? 0),
                       marginRight: 8,
                     }}
                   />
                   {t.title}
                 </td>
-                <td>
-                  {fmt(spent)} / {fmt(t.plannedMinutes)}
-                </td>
                 <td style={{ whiteSpace: "nowrap" }}>
                   {isActive ? (
-                    <em style={{ opacity: 0.7 }}>▶️ идёт — управление вверху</em>
+                    <em style={{ opacity: 0.6, fontSize: 12 }}>идёт ⏳</em>
                   ) : (
                     <button
                       onClick={() => timer.start(t.id, data.settings.focusMinutes)}
@@ -258,7 +305,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
                       disabled={timer.taskId !== null}
                       style={{ width: "100%" }}
                     >
-                      ▶️ старт
+                      ▶️
                     </button>
                   )}
                 </td>
@@ -270,7 +317,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
           })}
           {!tasks.length && (
             <tr>
-              <td colSpan={5}>
+              <td colSpan={4}>
                 <em>Пусто. Добавь задачу ниже.</em>
               </td>
             </tr>

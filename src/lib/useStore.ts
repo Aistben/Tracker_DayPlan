@@ -114,8 +114,15 @@ export function useStore() {
     location.reload();
   }, []);
 
+  // Единый порядковый номер задачи -> цвет. Общий для списка и графика.
+  const colorIndex = new Map<string, number>();
+  [...data.tasks]
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .forEach((t, i) => colorIndex.set(t.id, i));
+
   return {
     data,
+    colorIndex,
     addTask,
     setStatus,
     cycleStatus,
