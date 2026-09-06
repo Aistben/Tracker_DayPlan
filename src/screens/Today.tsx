@@ -128,17 +128,57 @@ export default function Today({ store, timer, date, setDate }: Props) {
               <button onClick={timer.stop} title="Стоп — записать как прерванную">
                 ⏹️
               </button>
-              <button onClick={timer.complete} title="Готово — засчитать сессию">
+              <button
+                onClick={() => {
+                  timer.complete();
+                  store.setStatus(activeTask.id, "done");
+                }}
+                title="Готово — засчитать время и закрыть задачу"
+              >
                 ✔️
               </button>
             </>
           ) : (
-            <small style={{ opacity: 0.6 }}>
+            <small style={{ opacity: 0.6, flex: 1 }}>
               ⏱️ Таймер не запущен — нажми ▶️ у задачи
             </small>
           )}
         </div>
       </div>
+
+      <p style={{ margin: "6px 0 12px", fontSize: 13, opacity: 0.85 }}>
+        <label>
+          <input
+            type="radio"
+            checked={timer.mode === "pomodoro"}
+            onChange={() => timer.setMode("pomodoro")}
+          />{" "}
+          🍅 Помидоро
+        </label>{" "}
+        <input
+          type="number"
+          min={1}
+          value={data.settings.focusMinutes}
+          onChange={(e) => store.updateSettings({ focusMinutes: +e.target.value })}
+          style={{ width: 52 }}
+          disabled={timer.mode !== "pomodoro"}
+        />{" "}
+        мин {" · "}
+        <label>
+          <input
+            type="radio"
+            checked={timer.mode === "stopwatch"}
+            onChange={() => timer.setMode("stopwatch")}
+          />{" "}
+          ⏱️ Секундомер
+        </label>{" "}
+        <button
+          onClick={() => "Notification" in window && Notification.requestPermission()}
+          title="Уведомление в конце помидорки"
+        >
+          🔔
+        </button>
+      </p>
 
       <p>
         План {fmt(totals.plan)} · Факт {fmt(totals.spent)} · {pct}%
@@ -266,55 +306,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
       <h3 style={{ marginTop: 0 }}>📊 Часы по дням</h3>
       <Stats store={store} compact />
 
-      <hr style={{ margin: "24px 0" }} />
-      <details>
-        <summary>⚙️ Настройки таймера</summary>
-        <p>
-          Режим:{" "}
-          <label>
-            <input
-              type="radio"
-              checked={timer.mode === "pomodoro"}
-              onChange={() => timer.setMode("pomodoro")}
-            />{" "}
-            🍅 Помидоро
-          </label>{" "}
-          <label>
-            <input
-              type="radio"
-              checked={timer.mode === "stopwatch"}
-              onChange={() => timer.setMode("stopwatch")}
-            />{" "}
-            ⏱️ Секундомер
-          </label>
-        </p>
-        <p>
-          Фокус{" "}
-          <input
-            type="number"
-            min={1}
-            value={data.settings.focusMinutes}
-            onChange={(e) => store.updateSettings({ focusMinutes: +e.target.value })}
-            style={{ width: 60 }}
-          />{" "}
-          мин · Перерыв{" "}
-          <input
-            type="number"
-            min={1}
-            value={data.settings.shortBreakMinutes}
-            onChange={(e) =>
-              store.updateSettings({ shortBreakMinutes: +e.target.value })
-            }
-            style={{ width: 60 }}
-          />{" "}
-          мин{" "}
-          <button
-            onClick={() => "Notification" in window && Notification.requestPermission()}
-          >
-            🔔 Разрешить уведомления
-          </button>
-        </p>
-      </details>
+
     </div>
   );
 }

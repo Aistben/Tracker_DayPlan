@@ -67,7 +67,7 @@ export default function Stats({
         date,
       };
       keys.forEach((id) => {
-        row[id] = +((day.get(id) ?? 0) / 60).toFixed(2);
+        row[id] = day.get(id) ?? 0; // минуты
       });
       return row;
     });
@@ -81,6 +81,16 @@ export default function Stats({
     data.tasks.find((t) => t.id === id)?.title ?? "Удалённая задача";
 
   const avg = activeDays ? totalMin / activeDays : 0;
+
+  // Пока времени мало, часы дают полоску в пиксель — показываем минуты.
+  const maxMin = Math.max(
+    0,
+    ...chart.map((r) =>
+      taskKeys.reduce((sum, k) => sum + (Number(r[k]) || 0), 0)
+    )
+  );
+  const inHours = maxMin >= 120;
+  const toUnit = (min: number) => (inHours ? +(min / 60).toFixed(2) : min);
 
   return (
     <div>
@@ -103,12 +113,24 @@ export default function Stats({
 
       <div style={{ width: "100%", height: compact ? 240 : 300 }}>
         <ResponsiveContainer>
-          <BarChart data={chart}>
+          <BarChart
+            data={chart.map((r) => {
+              const row: Record<string, string | number> = {
+                label: r.label,
+                date: r.date,
+              };
+              taskKeys.forEach((k) => (row[k] = toUnit(Number(r[k]) || 0)));
+              return row;
+            })}
+          >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="label" interval={days === 7 ? 0 : 2} />
-            <YAxis unit="ч" />
+            <YAxis unit={inHours ? "ч" : "м"} allowDecimals={inHours} />
             <Tooltip
-              formatter={(v: number, name: string) => [`${v} ч`, titleOf(name)]}
+              formatter={(v: number, name: string) => [
+                inHours ? `${v} ч` : `${v} мин`,
+                titleOf(name),
+              ]}
               labelFormatter={(_, p) => p?.[0]?.payload?.date ?? ""}
             />
             {taskKeys.map((id) => (
