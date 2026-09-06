@@ -126,7 +126,10 @@ export default function Stats({
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="label" interval={days === 7 ? 0 : 2} />
             <YAxis unit={inHours ? "ч" : "м"} allowDecimals={inHours} />
+            {/* shared=false — тултип показывает только тот сегмент, на котором курсор */}
             <Tooltip
+              shared={false}
+              cursor={{ fill: "rgba(0,0,0,0.04)" }}
               formatter={(v: number, name: string) => [
                 inHours ? `${v} ч` : `${v} мин`,
                 titleOf(name),

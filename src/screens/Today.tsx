@@ -76,7 +76,7 @@ export default function Today({ store, timer, date, setDate }: Props) {
           marginBottom: 14,
         }}
       >
-        {/* дата + секундомер под ней */}
+        {/* дата */}
         <div>
           <h2 style={{ margin: 0 }}>
             <button onClick={() => setDate(shiftISO(date, -1))} title="Предыдущий день">
@@ -87,28 +87,17 @@ export default function Today({ store, timer, date, setDate }: Props) {
               ➡️
             </button>
           </h2>
-          <div style={{ marginTop: 6, fontSize: 13 }}>
-            <label title="Свободный отсчёт без лимита">
-              <input
-                type="radio"
-                checked={timer.mode === "stopwatch"}
-                onChange={() => timer.setMode("stopwatch")}
-              />{" "}
-              ⏱️ Секундомер
-            </label>{" "}
-            <label title="Фиксированный отрезок фокуса">
-              <input
-                type="radio"
-                checked={timer.mode === "pomodoro"}
-                onChange={() => timer.setMode("pomodoro")}
-              />{" "}
-              🍅 Помидоро
-            </label>
-          </div>
         </div>
 
-        {/* циферблат */}
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        {/* циферблат — прижат к правому краю, параллельно дате */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            marginLeft: "auto",
+          }}
+        >
           <svg width={104} height={104} viewBox="0 0 104 104">
             <circle cx="52" cy="52" r="46" fill="none" stroke="#e3e3e3" strokeWidth="9" />
             <circle
@@ -206,6 +195,24 @@ export default function Today({ store, timer, date, setDate }: Props) {
             fontSize: 13,
           }}
         >
+          Режим:{" "}
+          <label>
+            <input
+              type="radio"
+              checked={timer.mode === "pomodoro"}
+              onChange={() => timer.setMode("pomodoro")}
+            />{" "}
+            🍅 Помидоро
+          </label>{" "}
+          <label>
+            <input
+              type="radio"
+              checked={timer.mode === "stopwatch"}
+              onChange={() => timer.setMode("stopwatch")}
+            />{" "}
+            ⏱️ Секундомер
+          </label>
+          <br />
           🍅 Фокус{" "}
           <input
             type="number"
